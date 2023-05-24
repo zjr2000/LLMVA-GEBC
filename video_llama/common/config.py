@@ -264,7 +264,7 @@ def create_runner_config_validator():
     validator.add_argument(
         "runner",
         type=str,
-        choices=["runner_base", "runner_iter"],
+        choices=["runner_base", "runner_iter", "runner_feature_extraction"],
         help="""Runner to use. The "runner_base" uses epoch-based training while iter-based
             runner runs based on iters. Default: runner_base""",
     )

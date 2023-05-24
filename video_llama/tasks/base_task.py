@@ -244,6 +244,12 @@ class BaseTask:
             k: "{:.3f}".format(meter.global_avg)
             for k, meter in metric_logger.meters.items()
         }
+        
+    def feature_extraction(self, model, data_loadel):
+        raise NotImplementedError()
+        
+    def save_feature(self, feature, save_dir):
+        raise NotImplementedError()
 
     @staticmethod
     def save_result(result, result_dir, filename, remove_duplicate=""):

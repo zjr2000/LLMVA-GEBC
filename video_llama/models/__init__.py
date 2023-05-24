@@ -14,6 +14,7 @@ from video_llama.common.registry import registry
 from video_llama.models.base_model import BaseModel
 from video_llama.models.blip2 import Blip2Base
 from video_llama.models.video_llama import VideoLLAMA
+from video_llama.models.blip2_vision_encoder import BLIP2VisionEncoder
 from video_llama.processors.base_processor import BaseProcessor
 
 
@@ -21,7 +22,8 @@ __all__ = [
     "load_model",
     "BaseModel",
     "Blip2Base",
-    "VideoLLAMA"
+    "VideoLLAMA",
+    "BLIP2VisionEncoder"
 ]
 
 

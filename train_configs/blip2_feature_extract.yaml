@@ -1,0 +1,30 @@
+model:
+  arch: blip2_vision_encoder
+  vit_model: eva_clip_g
+  q_former_model: https://storage.googleapis.com/sfr-vision-language-research/LAVIS/models/BLIP2/blip2_pretrained_flant5xxl.pth
+  img_size: 224
+  drop_path_rate: 0
+  use_grad_checkpoint: False
+  vit_precision: fp32
+  freeze_vit: True
+  freeze_qformer: True
+  num_query_token: 32
+  model_type: pretrain_vicuna
+
+datasets:
+    gebc_videos:
+      build_info:
+        videos_dir: /nvme-ssd/zjr/VIdataset/gebc/GEBCVideos
+      vis_processor:
+        eval:
+          name: "alpro_video_train"
+          n_frms: 8
+          image_size: 224
+
+run:
+  task: video_feature_extraction
+  runner: runner_feature_extraction
+  batch_size: 4
+  num_workers: 4
+  device: "cuda"
+  save_dir: data/features/eva_vit_g_q_former_tokens

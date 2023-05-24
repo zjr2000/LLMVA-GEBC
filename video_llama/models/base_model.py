@@ -26,6 +26,9 @@ class BaseModel(nn.Module):
     @property
     def device(self):
         return list(self.parameters())[0].device
+    
+    def extract_feature(self, samples):
+        raise NotImplementedError()
 
     def load_checkpoint(self, url_or_filename):
         """

@@ -1,0 +1,5 @@
+datasets:
+  gebc_videos:
+    data_type: video
+    build_info:
+      videos_dir: path//webvid/webvid_tain_data/videos/

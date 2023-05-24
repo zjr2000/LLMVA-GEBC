@@ -6,5 +6,6 @@
 """
 
 from video_llama.runners.runner_base import RunnerBase
+from video_llama.runners.runner_feature_extraction import RunnerFeatureExtraction
 
-__all__ = ["RunnerBase"]
+__all__ = ["RunnerBase", "RunnerFeatureExtraction"]

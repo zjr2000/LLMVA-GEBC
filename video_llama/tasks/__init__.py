@@ -9,6 +9,7 @@ from video_llama.common.registry import registry
 from video_llama.tasks.base_task import BaseTask
 from video_llama.tasks.image_text_pretrain import ImageTextPretrainTask
 from video_llama.tasks.video_text_pretrain import VideoTextPretrainTask
+from video_llama.tasks.video_feature_extraction import VideoFeatureExtractionTask
 
 
 def setup_task(cfg):
@@ -24,5 +25,6 @@ def setup_task(cfg):
 __all__ = [
     "BaseTask",
     "ImageTextPretrainTask",
-    "VideoTextPretrainTask"
+    "VideoTextPretrainTask",
+    "VideoFeatureExtractionTask"
 ]
