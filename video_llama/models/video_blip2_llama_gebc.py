@@ -180,19 +180,21 @@ class VideoBLIP2LLAMA(Blip2Base):
         if prompt:
             batch_size = video_embeds.shape[0]
             # print(prompt)
-            p_before, p_after = prompt.split('<ImageHere>')
             p_before_tokens = self.llama_tokenizer(
-                p_before, return_tensors="pt", add_special_tokens=False).to(video_embeds.device)
+                'Video:', return_tensors="pt", add_special_tokens=False).to(video_embeds.device)
             p_after_tokens = self.llama_tokenizer(
-                p_after, return_tensors="pt", add_special_tokens=False).to(video_embeds.device)
+                prompt, return_tensors="pt", add_special_tokens=False, padding='longest').to(video_embeds.device)
             p_before_embeds = self.llama_model.model.embed_tokens(p_before_tokens.input_ids).expand(batch_size, -1, -1)
-            p_after_embeds = self.llama_model.model.embed_tokens(p_after_tokens.input_ids).expand(batch_size, -1, -1)
-            wrapped_video_embeds = torch.cat([p_before_embeds, video_embeds, p_after_embeds], dim=1)
+            p_after_embeds = self.llama_model.model.embed_tokens(p_after_tokens.input_ids)
+            p_after_attention_mask = p_after_tokens.attention_mask
+            wrapped_video_embeds = torch.cat([p_before_embeds, video_embeds], dim=1)
             wrapped_atts_video = atts_video[:, :1].expand(-1, wrapped_video_embeds.shape[1])
-            
+            wrapped_video_embeds = torch.cat([wrapped_video_embeds, p_after_embeds], dim=1)
+            wrapped_atts_video = torch.cat([wrapped_atts_video, p_after_attention_mask], dim=1)
             return wrapped_video_embeds, wrapped_atts_video
         else:
             return video_embeds, atts_video
+    
     
     def forward(self, samples):
         image_query_tokens = samples['image_query_tokens']
@@ -200,9 +202,8 @@ class VideoBLIP2LLAMA(Blip2Base):
         reference_points = samples['reference_points']
         video_embeds, atts_video = self.encode_video(image_query_tokens, reference_points)
 
-        if self.prompt_list:
-            prompt = random.choice(self.prompt_list)
-            video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
+        prompt = samples['prompt']
+        video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
 
         self.llama_tokenizer.padding_side = "right"
 
