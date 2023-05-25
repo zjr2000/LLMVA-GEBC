@@ -45,8 +45,6 @@ class VideoBLIP2LLAMA(Blip2Base):
     
     def __init__(
         self,
-        llama_model="",
-        prompt_path="",
         prompt_template="",
         max_txt_len=32,
         end_sym='\n',
@@ -114,16 +112,6 @@ class VideoBLIP2LLAMA(Blip2Base):
 
         self.max_txt_len = max_txt_len
         self.end_sym = end_sym
-
-        if prompt_path:
-            with open(prompt_path, 'r') as f:
-                raw_prompts = f.read().splitlines()
-            filted_prompts = [raw_prompt for raw_prompt in raw_prompts if "<ImageHere>" in raw_prompt]
-            self.prompt_list = [prompt_template.format(p) for p in filted_prompts]
-            logging.info('Load {} training prompts'.format(len(self.prompt_list)))
-            logging.info('Prompt Example \n{}'.format(random.choice(self.prompt_list)))
-        else:
-            self.prompt_list = []
 
         self.video_frame_position_embedding = nn.Embedding(max_frame_pos, self.q_former_hidden_size)
         self.num_video_query_token = num_video_query_token
