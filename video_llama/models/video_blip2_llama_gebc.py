@@ -65,10 +65,7 @@ class VideoBLIP2LLAMA(Blip2Base):
         logging.info('Loading LLAMA Tokenizer')
         self.llama_tokenizer = LlamaTokenizer.from_pretrained(llama_model, use_fast=False)
         if self.llama_tokenizer.pad_token is None:
-            self.llama_tokenizer.pad_token = self.llama_tokenizer.eos_token 
-        DEFAULT_IMAGE_PATCH_TOKEN = '<ImageHere>'
-        self.llama_tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN], special_tokens=True)
-        self.IMAGE_PATCH_TOKEN_ID = self.llama_tokenizer.get_vocab()[DEFAULT_IMAGE_PATCH_TOKEN]
+            self.llama_tokenizer.pad_token = self.llama_tokenizer.eos_token
         
         logging.info('Loading LLAMA Model')
         if self.low_resource:
@@ -207,47 +204,46 @@ class VideoBLIP2LLAMA(Blip2Base):
             prompt = random.choice(self.prompt_list)
             video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
 
-            self.llama_tokenizer.padding_side = "right"
+        self.llama_tokenizer.padding_side = "right"
 
-            text = [t + self.end_sym for t in samples["text_input"]]
+        text = [t + self.end_sym for t in samples["text_input"]]
 
-            to_regress_tokens = self.llama_tokenizer(
-                text,
-                return_tensors="pt",
-                padding="longest",
-                truncation=True,
-                max_length=self.max_txt_len,
-                add_special_tokens=False
-            ).to(video_embeds.device)
+        to_regress_tokens = self.llama_tokenizer(
+            text,
+            return_tensors="pt",
+            padding="longest",
+            truncation=True,
+            max_length=self.max_txt_len,
+            add_special_tokens=False
+        ).to(video_embeds.device)
 
-            targets = to_regress_tokens.input_ids.masked_fill(
-                to_regress_tokens.input_ids == self.llama_tokenizer.pad_token_id, -100
-            )
+        targets = to_regress_tokens.input_ids.masked_fill(
+            to_regress_tokens.input_ids == self.llama_tokenizer.pad_token_id, -100
+        )
 
-            empty_targets = (
-                torch.ones([video_embeds.shape[0], atts_video.shape[1]+1],
-                        dtype=torch.long).to(video_embeds.device).fill_(-100)  # plus one for bos
-            )
-            targets = torch.cat([empty_targets, targets], dim=1)
+        empty_targets = (
+            torch.ones([video_embeds.shape[0], atts_video.shape[1]+1],
+                dtype=torch.long).to(video_embeds.device).fill_(-100)  # plus one for bos
+        )
+        targets = torch.cat([empty_targets, targets], dim=1)
             
-            batch_size = video_embeds.shape[0]
-            bos = torch.ones([batch_size, 1],
-                            dtype=to_regress_tokens.input_ids.dtype,
-                            device=to_regress_tokens.input_ids.device) * self.llama_tokenizer.bos_token_id
-            bos_embeds = self.llama_model.model.embed_tokens(bos)
-            atts_bos = atts_video[:, :1]
+        batch_size = video_embeds.shape[0]
+        bos = torch.ones([batch_size, 1],dtype=to_regress_tokens.input_ids.dtype,
+                device=to_regress_tokens.input_ids.device) * self.llama_tokenizer.bos_token_id
+        bos_embeds = self.llama_model.model.embed_tokens(bos)
+        atts_bos = atts_video[:, :1]
 
-            to_regress_embeds = self.llama_model.model.embed_tokens(to_regress_tokens.input_ids)
-            inputs_embeds = torch.cat([bos_embeds, video_embeds, to_regress_embeds], dim=1)
-            attention_mask = torch.cat([atts_bos, atts_video, to_regress_tokens.attention_mask], dim=1)
+        to_regress_embeds = self.llama_model.model.embed_tokens(to_regress_tokens.input_ids)
+        inputs_embeds = torch.cat([bos_embeds, video_embeds, to_regress_embeds], dim=1)
+        attention_mask = torch.cat([atts_bos, atts_video, to_regress_tokens.attention_mask], dim=1)
 
-            with self.maybe_autocast():
-                outputs = self.llama_model(
-                    inputs_embeds=inputs_embeds,
-                    attention_mask=attention_mask,
-                    return_dict=True,
-                    labels=targets,
-                )
-            loss = outputs.loss
+        with self.maybe_autocast():
+            outputs = self.llama_model(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                return_dict=True,
+                labels=targets,
+            )
+        loss = outputs.loss
 
         return {"loss": loss}
