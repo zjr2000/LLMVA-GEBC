@@ -38,3 +38,13 @@ class GEBCVideoDataset(BaseDataset):
             "video": video,
             "video_id": ann["video_id"],
         }
+        
+    def collater(self, samples):
+        videos = [v['video'] for v in samples]
+        videos = torch.stack(videos, 0)
+        video_ids = [v['video_id'] for v in samples]
+        
+        return {
+            'video': videos,
+            'video_id': video_ids 
+        }
