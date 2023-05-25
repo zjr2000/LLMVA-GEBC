@@ -117,7 +117,8 @@ class VideoBLIP2OPT(Blip2Base):
         for layer in self.video_Qformer.bert.encoder.layer:
             layer.output = None
             layer.intermediate = None
-        self.temporal
+        self.temporal_pos_trans = nn.Linear(self.q_former_hidden_size, self.q_former_hidden_size)
+        self.temporal_pos_trans_norm = nn.LayerNorm(self.q_former_hidden_size)
 
 
     def get_proposal_pos_embed(self, proposals):
@@ -129,10 +130,11 @@ class VideoBLIP2OPT(Blip2Base):
         dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats)
         # batch size, 2
         proposals = proposals.sigmoid() * scale
-        # batch size, 2, 256
+        # batch size, 2, 128
         pos = proposals[:, :, None] / dim_t
-        # batch size, 2, 512
+        # batch size, 2, 256
         pos = torch.stack((pos[:, :, 0::2].sin(), pos[:, :, 1::2].cos()), dim=4).flatten(2)
+        pos = pos.view(pos.shape[0], 1, -1)
         return pos
 
 
@@ -152,7 +154,7 @@ class VideoBLIP2OPT(Blip2Base):
             video_query_tokens = self.video_query_tokens.expand(frame_hidden_state.shape[0], -1, -1)
             
             # Embed boundary information,  batch size, 1, hidden_size
-            reference_point_embed = self.get_proposal_pos_embed(reference_points)
+            reference_point_embed = self.temporal_pos_trans_norm(self.temporal_pos_trans(self.get_proposal_pos_embed(reference_points)))
             video_query_tokens = video_query_tokens + reference_point_embed
             
             video_query_output = self.video_Qformer.bert(
