@@ -16,6 +16,8 @@ from video_llama.models.blip2 import Blip2Base
 from video_llama.models.video_llama import VideoLLAMA
 from video_llama.models.blip2_vision_encoder import BLIP2VisionEncoder
 from video_llama.processors.base_processor import BaseProcessor
+from video_llama.models.video_blip2_opt_gebc import VideoBLIP2OPT
+from video_llama.models.video_blip2_llama_gebc import VideoBLIP2LLAMA
 
 
 __all__ = [
@@ -23,7 +25,9 @@ __all__ = [
     "BaseModel",
     "Blip2Base",
     "VideoLLAMA",
-    "BLIP2VisionEncoder"
+    "BLIP2VisionEncoder",
+    "VideoBLIP2OPT",
+    "VideoBLIP2LLAMA"
 ]
 
 
