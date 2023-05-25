@@ -45,7 +45,7 @@ class VideoBLIP2LLAMA(Blip2Base):
     
     def __init__(
         self,
-        prompt_template="",
+        llama_model="",
         max_txt_len=32,
         end_sym='\n',
         low_resource=False,  # use 8 bit and put vit in cpu
