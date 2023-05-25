@@ -14,9 +14,10 @@ from transformers import LlamaTokenizer,BertConfig
 import einops
 import copy
 from video_llama.models.Qformer import BertConfig, BertLMHeadModel
+import math
 # from flamingo_pytorch import PerceiverResampler
-@registry.register_model("video_llama_gebc")
-class VideoLLAMA(Blip2Base):
+@registry.register_model("video_blip2_llama_gebc")
+class VideoBLIP2LLAMA(Blip2Base):
     """
     BLIP2 GPT-LLAMA model.
     """
@@ -56,12 +57,13 @@ class VideoLLAMA(Blip2Base):
         llama_proj_model='',
         max_frame_pos= 32,
         num_video_query_token = 32,
+        q_former_hidden_size=768
     ):
         super().__init__()
 
         self.tokenizer = self.init_tokenizer()
         self.low_resource = low_resource
-
+        self.q_former_hidden_size = q_former_hidden_size
         logging.info('Loading LLAMA Tokenizer')
         self.llama_tokenizer = LlamaTokenizer.from_pretrained(llama_model, use_fast=False)
         if self.llama_tokenizer.pad_token is None:
@@ -91,7 +93,7 @@ class VideoLLAMA(Blip2Base):
 
         logging.info('Loading LLAMA proj')
         self.llama_proj = nn.Linear(
-            self.Qformer.config.hidden_size, self.llama_model.config.hidden_size
+            self.q_former_hidden_size, self.llama_model.config.hidden_size
         )
         if llama_proj_model:
             print("load llama proj weight: {}".format(llama_proj_model))
@@ -123,10 +125,10 @@ class VideoLLAMA(Blip2Base):
         else:
             self.prompt_list = []
 
-        self.video_frame_position_embedding = nn.Embedding(max_frame_pos, self.Qformer.config.hidden_size)
+        self.video_frame_position_embedding = nn.Embedding(max_frame_pos, self.q_former_hidden_size)
         self.num_video_query_token = num_video_query_token
         self.video_Qformer,self.video_query_tokens = self.init_video_Qformer(num_query_token = num_video_query_token,\
-            vision_width=self.Qformer.config.hidden_size, num_hidden_layers =2)
+            vision_width=self.q_former_hidden_size, num_hidden_layers =2)
 
         self.video_Qformer.cls = None
         self.video_Qformer.bert.embeddings.word_embeddings = None
@@ -135,8 +137,29 @@ class VideoLLAMA(Blip2Base):
             layer.output = None
             layer.intermediate = None
 
+    def inverse_sigmoid(self, x, eps=1e-5):
+        x = x.clamp(min=0, max=1)
+        x1 = x.clamp(min=eps)
+        x2 = (1 - x).clamp(min=eps)
+        return torch.log(x1/x2)
 
-    def encode_video(self, q_hidden_state):
+    def get_proposal_pos_embed(self, proposals):
+        num_pos_feats = self.q_former_hidden_size / 2
+        temperature = 10000
+        scale = 2 * math.pi
+
+        dim_t = torch.arange(num_pos_feats, dtype=torch.float32, device=proposals.device)
+        dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats)
+        # batch size, 1
+        proposals = proposals.sigmoid() * scale
+        # batch size, 1, 256
+        pos = proposals[:, :, None] / dim_t
+        # batch size, 1, 512
+        pos = torch.stack((pos[:, :, 0::2].sin(), pos[:, :, 1::2].cos()), dim=4).flatten(2)
+        return pos
+
+
+    def encode_video(self, q_hidden_state, reference_points):
         with self.maybe_autocast():
             # add frame_pos embedding
             batch_size, time_length, _, _ = q_hidden_state.size()
@@ -146,11 +169,14 @@ class VideoLLAMA(Blip2Base):
             
             frame_position_embeddings = frame_position_embeddings.unsqueeze(-2)
             frame_hidden_state = frame_position_embeddings + q_hidden_state
-            
             # frame attention
             frame_hidden_state =  einops.rearrange(frame_hidden_state, 'b t q h -> b (t q) h',b=batch_size,t=time_length)
             frame_atts = torch.ones(frame_hidden_state.size()[:-1], dtype=torch.long).to(q_hidden_state.device)
             video_query_tokens = self.video_query_tokens.expand(frame_hidden_state.shape[0], -1, -1)
+            
+            # Embed boundary information,  batch size, 1, hidden_size
+            reference_point_embed = self.get_proposal_pos_embed(self.inverse_sigmoid(reference_points))
+            video_query_tokens = video_query_tokens + reference_point_embed
             
             video_query_output = self.video_Qformer.bert(
                 query_embeds=video_query_tokens,
@@ -185,5 +211,55 @@ class VideoLLAMA(Blip2Base):
     
     def forward(self, samples):
         image_query_tokens = samples['image_query_tokens']
-        video_embeds, atts_video = self.encode_video(image_query_tokens)
-        
+
+        reference_points = samples['reference_points']
+        video_embeds, atts_video = self.encode_video(image_query_tokens, reference_points)
+
+        if self.prompt_list:
+            prompt = random.choice(self.prompt_list)
+            video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
+
+            self.llama_tokenizer.padding_side = "right"
+
+            text = [t + self.end_sym for t in samples["text_input"]]
+
+            to_regress_tokens = self.llama_tokenizer(
+                text,
+                return_tensors="pt",
+                padding="longest",
+                truncation=True,
+                max_length=self.max_txt_len,
+                add_special_tokens=False
+            ).to(video_embeds.device)
+
+            targets = to_regress_tokens.input_ids.masked_fill(
+                to_regress_tokens.input_ids == self.llama_tokenizer.pad_token_id, -100
+            )
+
+            empty_targets = (
+                torch.ones([video_embeds.shape[0], atts_video.shape[1]+1],
+                        dtype=torch.long).to(video_embeds.device).fill_(-100)  # plus one for bos
+            )
+            targets = torch.cat([empty_targets, targets], dim=1)
+            
+            batch_size = video_embeds.shape[0]
+            bos = torch.ones([batch_size, 1],
+                            dtype=to_regress_tokens.input_ids.dtype,
+                            device=to_regress_tokens.input_ids.device) * self.llama_tokenizer.bos_token_id
+            bos_embeds = self.llama_model.model.embed_tokens(bos)
+            atts_bos = atts_video[:, :1]
+
+            to_regress_embeds = self.llama_model.model.embed_tokens(to_regress_tokens.input_ids)
+            inputs_embeds = torch.cat([bos_embeds, video_embeds, to_regress_embeds], dim=1)
+            attention_mask = torch.cat([atts_bos, atts_video, to_regress_tokens.attention_mask], dim=1)
+
+            with self.maybe_autocast():
+                outputs = self.llama_model(
+                    inputs_embeds=inputs_embeds,
+                    attention_mask=attention_mask,
+                    return_dict=True,
+                    labels=targets,
+                )
+            loss = outputs.loss
+
+        return {"loss": loss}

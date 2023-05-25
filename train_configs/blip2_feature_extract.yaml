@@ -17,8 +17,8 @@ datasets:
         videos_dir: /nvme-ssd/zjr/VIdataset/gebc/GEBCVideos
       vis_processor:
         eval:
-          name: "alpro_video_train"
-          n_frms: 8
+          name: "alpro_video_eval"
+          n_frms: 16
           image_size: 224
 
 run:
@@ -27,4 +27,4 @@ run:
   batch_size: 4
   num_workers: 4
   device: "cuda"
-  save_dir: data/features/eva_vit_g_q_former_tokens
+  save_dir: data/features/eva_vit_g_q_former_tokens_16

@@ -2,3 +2,12 @@
 <Image><ImageHere></Image> Take a look at this image and describe what you notice.
 <Image><ImageHere></Image> Please provide a detailed description of the picture.
 <Image><ImageHere></Image> Could you describe the contents of this image for me?
+
+
+<Image><ImageHere></Image> It is "change of action" Describe the subject in this video.
+<Image><ImageHere></Image> It is "change of action" Describe the status before action.
+<Image><ImageHere></Image> It is "change of action" Describe the status after action.
+
+Video:<VideoHere>. The video is about change of action. The subject is
+Video:<VideoHere>. The video is about of action. The status before action is
+Video:<VideoHere>. The video is about of action. The status after action is
