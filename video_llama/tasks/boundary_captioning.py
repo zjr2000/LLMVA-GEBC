@@ -15,13 +15,14 @@ from video_llama.evaluation.gebc_evaluation.evaluation_utils import gebc_caption
 
 @registry.register_task("boundary_captioning")
 class BoundaryCaptionTask(BaseTask):
-    def __init__(self, num_beams, max_len, min_len, evaluate, report_metric=True):
+    def __init__(self, num_beams, max_len, min_len, evaluate, cfg, report_metric=True):
         super().__init__()
 
         self.num_beams = num_beams
         self.max_len = max_len
         self.min_len = min_len
         self.evaluate = evaluate
+        self.cfg = cfg
 
         self.report_metric = report_metric
 
@@ -41,6 +42,7 @@ class BoundaryCaptionTask(BaseTask):
             max_len=max_len,
             min_len=min_len,
             evaluate=evaluate,
+            cfg=cfg,
             report_metric=report_metric,
         )
 
@@ -56,7 +58,7 @@ class BoundaryCaptionTask(BaseTask):
         )
 
         boundary_ids = samples["boundary_id"]
-        types = samples["boundary_type"]
+        types = samples["caption_type"]
         for caption, boundary_id, type in zip(captions, boundary_ids, types):
             results.append({"caption": caption, "boundary_id": boundary_id, "type": type})
 
@@ -67,7 +69,7 @@ class BoundaryCaptionTask(BaseTask):
             result=val_result,
             result_dir=registry.get_path("result_dir"),
             filename="{}_epoch{}".format(split_name, epoch),
-            remove_duplicate="boundary_id",
+            remove_duplicate=False,
         )
 
         if self.report_metric:
@@ -85,7 +87,7 @@ class BoundaryCaptionTask(BaseTask):
             metrics = {"agg_metrics": 0.0}
             return metrics
         
-        gt_file = self.cfg.datasets_cfg.build_info.annotations.get(split_name).annotation_path
+        gt_file = self.cfg.datasets_cfg.gebc.build_info.annotations.get(split_name).annotation_path
         
 
         scores = gebc_captioning_eval(eval_result_file, gt_file)

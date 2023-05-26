@@ -18,11 +18,11 @@ def split_pred(pred):
         status_before=dict(),
         status_after=dict()
     )
-    for pred_item in pred_dict:
-        boundary_type = pred_item['type']
+    for pred_item in pred:
+        caption_type = pred_item['type']
         boundary_id = pred_item['boundary_id']
         caption = pred_item['caption']
-        pred_dict[boundary_type][boundary_id] = [caption]
+        pred_dict[caption_type][boundary_id] = [caption]
     return pred_dict
 
 def split_gt(gt):
@@ -40,6 +40,7 @@ def split_gt(gt):
             gt_dict['subject'][boundary_id] = [subject]
             gt_dict['status_before'][boundary_id] = [status_before]
             gt_dict['status_after'][boundary_id] = [status_after]
+    return gt_dict
             
 
 def gebc_captioning_eval(pred_file_path, gt_file_path):
