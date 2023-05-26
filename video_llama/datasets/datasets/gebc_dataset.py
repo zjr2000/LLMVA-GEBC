@@ -32,7 +32,7 @@ def get_feats(key, vf_type, vf_folder, data_norm=False):
         path = os.path.join(vf_folder, key[0:11] + '.npy')
     else:
         raise AssertionError('feature type error: {}'.format(vf_type))
-    feats, padding = read_file(path, feat_dim, MEAN, VAR, data_norm)
+    feats, padding = read_file(path, MEAN, VAR, data_norm)
 
     assert feats.shape[-1] == feat_dim, 'load {} error, got shape {}'.format(path, feats.shape)
     return feats
@@ -110,9 +110,10 @@ class GEBCDataset(BaseDataset):
         boundary_type, caption_type = item_data['label'], item_data['type']
         prompt = build_prompt(boundary_type, caption_type)
         # Load caption
-        caption = self.annotation['caption']
+        caption = item_data['caption']
         # Load feature
         q_former_tokens = get_feats(item_data['boundary_id'], 'q_former_tokens', self.q_former_feature_folder)
+        q_former_tokens = torch.from_numpy(q_former_tokens)
         return {
             'image_query_tokens': q_former_tokens,
             'reference_points': reference_point,
@@ -193,6 +194,7 @@ class EvalGEBCDataset(BaseDataset):
         prompt = build_prompt(boundary_type, caption_type)
         # Load feature
         q_former_tokens = get_feats(item_data['boundary_id'], 'q_former_tokens', self.q_former_feature_folder)
+        q_former_tokens = torch.from_numpy(q_former_tokens)
         return {
             'image_query_tokens': q_former_tokens,
             'reference_points': reference_point,
