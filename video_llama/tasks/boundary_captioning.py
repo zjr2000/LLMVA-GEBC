@@ -11,7 +11,7 @@ import os
 from video_llama.common.dist_utils import main_process
 from video_llama.common.registry import registry
 from video_llama.tasks.base_task import BaseTask
-
+from video_llama.evaluation.gebc_evaluation.evaluation_utils import gebc_captioning_eval
 
 @registry.register_task("boundary_captioning")
 class CaptionTask(BaseTask):
@@ -88,15 +88,14 @@ class CaptionTask(BaseTask):
         gt_file = self.cfg.datasets_cfg.build_info.annotations.get(split_name).annotation_path
         
 
-        agg_metrics = coco_val.eval["CIDEr"] + coco_val.eval["Bleu_4"]
-        log_stats = {split_name: {k: v for k, v in coco_val.eval.items()}}
+        scores = gebc_captioning_eval(eval_result_file, gt_file)
+        scores['agg_metrics'] = scores['overall_score']
+        
+        log_stats = {split_name: {k: v for k, v in scores.items()}}
 
         with open(
             os.path.join(registry.get_path("output_dir"), "evaluate.txt"), "a"
         ) as f:
             f.write(json.dumps(log_stats) + "\n")
 
-        coco_res = {k: v for k, v in coco_val.eval.items()}
-        coco_res["agg_metrics"] = agg_metrics
-
-        return coco_res
+        return scores
