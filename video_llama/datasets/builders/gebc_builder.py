@@ -11,7 +11,7 @@ class GEBCBuilder(BaseDatasetBuilder):
     train_dataset_cls = GEBCDataset
     eval_dataset_cls = EvalGEBCDataset
     
-    DATASET_CONFIG_DICT = {"default": "configs/datasets/webvid/defaults.yaml"}
+    DATASET_CONFIG_DICT = {"default": "configs/datasets/gebc/default.yaml"}
     
     def _download_ann(self):
         pass
@@ -20,7 +20,7 @@ class GEBCBuilder(BaseDatasetBuilder):
         pass
 
     def build(self):
-        self.build_processors()
+        # self.build_processors()
         datasets = dict()
         build_info = self.config.build_info
         dataset_cls = self.train_dataset_cls

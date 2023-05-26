@@ -1,0 +1,13 @@
+datasets:
+  gebc:
+    data_type: video
+    build_info:
+      video_info_path: data/annotations/video_info.json
+      q_former_feature_folder: data/features/eva_vit_g_q_former_tokens_8
+      annotations:
+        train:
+          annotation_path: data/annotations/trainset_highest_f1.json
+        val:
+          annotation_path: data/annotations/valset_highest_f1.json
+        test:
+          annotation_path: data/annotations/test_timestamp.json
