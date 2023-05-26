@@ -7,7 +7,8 @@ import torch.nn as nn
 
 from video_llama.common.registry import registry
 from video_llama.models.blip2 import Blip2Base, disabled_train
-from video_llama.models.modeling_opt import OPTForCausalLM
+# from video_llama.models.modeling_opt import OPTForCausalLM
+from transformers.models.opt.modeling_opt import OPTForCausalLM
 # from video_llama.models.Qformer import BertEncoder
 from transformers import AutoTokenizer,BertConfig
 # from transformers.models.bert.modeling_bert import BertEncoder
@@ -122,19 +123,19 @@ class VideoBLIP2OPT(Blip2Base):
 
 
     def get_proposal_pos_embed(self, proposals):
-        num_pos_feats = self.q_former_hidden_size / 4
+        num_pos_feats = self.q_former_hidden_size / 2
         temperature = 10000
         scale = 2 * math.pi
 
         dim_t = torch.arange(num_pos_feats, dtype=torch.float32, device=proposals.device)
-        dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats)
+        dim_t = temperature ** (2 * (torch.div(dim_t, 2, rounding_mode='trunc')) / num_pos_feats)
         # batch size, 2
         proposals = proposals.sigmoid() * scale
         # batch size, 2, 128
         pos = proposals[:, :, None] / dim_t
         # batch size, 2, 256
-        pos = torch.stack((pos[:, :, 0::2].sin(), pos[:, :, 1::2].cos()), dim=4).flatten(2)
-        pos = pos.view(pos.shape[0], 1, -1)
+        pos = torch.stack((pos[:, :, 0::2].sin(), pos[:, :, 1::2].cos()), dim=3).flatten(2)
+        pos = pos.view(pos.shape[0], 1, -1).float()
         return pos
 
 
@@ -178,8 +179,8 @@ class VideoBLIP2OPT(Blip2Base):
                 'Video:', return_tensors="pt", add_special_tokens=False).to(video_embeds.device)
             p_after_tokens = self.opt_tokenizer(
                 prompt, return_tensors="pt", add_special_tokens=False, padding='longest').to(video_embeds.device)
-            p_before_embeds = self.opt_model.model.embed_tokens(p_before_tokens.input_ids).expand(batch_size, -1, -1)
-            p_after_embeds = self.opt_model.model.embed_tokens(p_after_tokens.input_ids)
+            p_before_embeds = self.opt_model.model.decoder.embed_tokens(p_before_tokens.input_ids).expand(batch_size, -1, -1)
+            p_after_embeds = self.opt_model.model.decoder.embed_tokens(p_after_tokens.input_ids)
             p_after_attention_mask = p_after_tokens.attention_mask
             wrapped_video_embeds = torch.cat([p_before_embeds, video_embeds], dim=1)
             wrapped_atts_video = atts_video[:, :1].expand(-1, wrapped_video_embeds.shape[1])
@@ -226,10 +227,10 @@ class VideoBLIP2OPT(Blip2Base):
         bos = torch.ones([batch_size, 1],
                     dtype=to_regress_tokens.input_ids.dtype,
                     device=to_regress_tokens.input_ids.device) * self.opt_tokenizer.bos_token_id
-        bos_embeds = self.opt_model.model.embed_tokens(bos)
+        bos_embeds = self.opt_model.model.decoder.embed_tokens(bos)
         atts_bos = atts_video[:, :1]
 
-        to_regress_embeds = self.opt_model.model.embed_tokens(to_regress_tokens.input_ids)
+        to_regress_embeds = self.opt_model.model.decoder.embed_tokens(to_regress_tokens.input_ids)
         inputs_embeds = torch.cat([bos_embeds, video_embeds, to_regress_embeds], dim=1)
         attention_mask = torch.cat([atts_bos, atts_video, to_regress_tokens.attention_mask], dim=1)
 
