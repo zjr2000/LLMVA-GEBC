@@ -14,7 +14,7 @@ from video_llama.tasks.base_task import BaseTask
 from video_llama.evaluation.gebc_evaluation.evaluation_utils import gebc_captioning_eval
 
 @registry.register_task("boundary_captioning")
-class CaptionTask(BaseTask):
+class BoundaryCaptionTask(BaseTask):
     def __init__(self, num_beams, max_len, min_len, evaluate, report_metric=True):
         super().__init__()
 

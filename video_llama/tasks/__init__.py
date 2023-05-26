@@ -10,7 +10,7 @@ from video_llama.tasks.base_task import BaseTask
 from video_llama.tasks.image_text_pretrain import ImageTextPretrainTask
 from video_llama.tasks.video_text_pretrain import VideoTextPretrainTask
 from video_llama.tasks.video_feature_extraction import VideoFeatureExtractionTask
-
+from video_llama.tasks.boundary_captioning import BoundaryCaptionTask
 
 def setup_task(cfg):
     assert "task" in cfg.run_cfg, "Task name must be provided."
@@ -26,5 +26,6 @@ __all__ = [
     "BaseTask",
     "ImageTextPretrainTask",
     "VideoTextPretrainTask",
-    "VideoFeatureExtractionTask"
+    "VideoFeatureExtractionTask",
+    "BoundaryCaptionTask"
 ]
