@@ -246,3 +246,47 @@ class VideoBLIP2LLAMA(Blip2Base):
         loss = outputs.loss
 
         return {"loss": loss}
+    
+    @torch.no_grad()
+    def generate(
+        self,
+        samples,
+        use_nucleus_sampling=False,
+        num_beams=5,
+        max_length=30,
+        min_length=1,
+        top_p=0.9,
+        repetition_penalty=1.5,
+        length_penalty=1,
+        num_captions=1,
+        temperature=1,
+    ):
+        
+        with self.maybe_autocast():
+            image_query_tokens = samples['image_query_tokens']
+            reference_points = samples['reference_points']
+            video_embeds, atts_video = self.encode_video(image_query_tokens, reference_points)
+
+            prompt = samples['prompt']
+            video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
+
+            outputs = self.llama_model.generate(
+                inputs_embeds=video_embeds,
+                attention_mask=atts_video,
+                do_sample=use_nucleus_sampling,
+                top_p=top_p,
+                temperature=temperature,
+                num_beams=num_beams,
+                max_length=max_length,
+                min_length=min_length,
+                eos_token_id=self.llama_tokenizer.eos_token_id,
+                repetition_penalty=repetition_penalty,
+                length_penalty=length_penalty,
+                num_return_sequences=num_captions,
+            )
+
+            # outputs[outputs == 0] = 2 # convert output id 0 to 2 (eos_token_id)
+            output_text = self.llama_tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            output_text = [text.strip() for text in output_text]
+
+        return output_text

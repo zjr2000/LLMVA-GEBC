@@ -46,7 +46,7 @@ class VideoBLIP2OPT(Blip2Base):
     def __init__(
         self,
         opt_model="",
-        max_txt_len=32,
+        max_txt_len=30,
         end_sym='\n',
         low_resource=False,  # use 8 bit and put vit in cpu
         device_8bit=0,  # the device of 8bit model should be set when loading and cannot be changed anymore.
@@ -243,3 +243,62 @@ class VideoBLIP2OPT(Blip2Base):
         loss = outputs.loss
 
         return {"loss": loss}
+    
+    @torch.no_grad()
+    def generate(
+        self,
+        samples,
+        use_nucleus_sampling=False,
+        num_beams=5,
+        max_length=30,
+        min_length=1,
+        top_p=0.9,
+        repetition_penalty=1.0,
+        length_penalty=1.0,
+        num_captions=1,
+        temperature=1,
+    ):
+        """
+        Args:
+            samples (dict): A dictionary containing the following keys:
+                - image (torch.Tensor): A tensor of shape (batch_size, 3, H, W)
+            use_nucleus_sampling (bool): Whether to use nucleus sampling. If False, use top-k sampling.
+            num_beams (int): Number of beams for beam search. 1 means no beam search.
+            max_length (int): The maximum length of the sequence to be generated.
+            min_length (int): The minimum length of the sequence to be generated.
+            top_p (float): The cumulative probability for nucleus sampling.
+            repetition_penalty (float): The parameter for repetition penalty. 1.0 means no penalty.
+            num_captions (int): Number of captions to be generated for each image.
+        Returns:
+            captions (list): A list of strings of length batch_size * num_captions.
+        """
+        with self.maybe_autocast():
+            image_query_tokens = samples['image_query_tokens']
+
+            reference_points = samples['reference_points']
+            video_embeds, atts_video = self.encode_video(image_query_tokens, reference_points)
+
+            prompt = samples['prompt']
+            video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
+            
+            outputs = self.opt_model.generate(
+                inputs_embeds=video_embeds, 
+                attention_mask=atts_video,
+                do_sample=use_nucleus_sampling,
+                top_p=top_p,
+                temperature=temperature,
+                num_beams=num_beams,
+                max_length=max_length,
+                min_length=min_length,
+                eos_token_id=self.opt_tokenizer.eos_token_id,
+                repetition_penalty=repetition_penalty,
+                length_penalty=length_penalty,
+                num_return_sequences=num_captions,
+            )
+            output_text = self.opt_tokenizer.batch_decode(
+                outputs, skip_special_tokens=True
+            )
+            
+            output_text = [text.strip() for text in output_text]
+        return output_text
+    
