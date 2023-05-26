@@ -118,7 +118,8 @@ class GEBCDataset(BaseDataset):
             'image_query_tokens': q_former_tokens,
             'reference_points': reference_point,
             'prompt': prompt,
-            'text_input': caption
+            'text_input': caption,
+            'boundary_id': item_data['boundary_id']
         }
     
         
@@ -127,11 +128,13 @@ class GEBCDataset(BaseDataset):
         reference_points = torch.stack([sample['reference_points'] for sample in samples], 0)
         prompt = [sample['prompt'] for sample in samples]
         text_input = [sample['text_input'] for sample in samples]
+        boundary_ids = [sample['boundary_id'] for sample in samples]
         return {
             'image_query_tokens': q_former_tokens,
             'reference_points': reference_points,
             'prompt': prompt,
-            'text_input': text_input
+            'text_input': text_input,
+            'boundary_id': boundary_ids
         }
         
         
@@ -198,7 +201,9 @@ class EvalGEBCDataset(BaseDataset):
         return {
             'image_query_tokens': q_former_tokens,
             'reference_points': reference_point,
-            'prompt': prompt
+            'prompt': prompt,
+            'boundary_id': item_data['boundary_id'],
+            'boundary_type': boundary_type
         }
     
         
@@ -206,8 +211,13 @@ class EvalGEBCDataset(BaseDataset):
         q_former_tokens = torch.stack([sample['image_query_tokens'] for sample in samples], 0)
         reference_points = torch.stack([sample['reference_points'] for sample in samples], 0)
         prompt = [sample['prompt'] for sample in samples]
+        boundary_ids = [sample['boundary_id'] for sample in samples]
+        boundary_types = [sample['boundary_type'] for sample in samples]
         return {
             'image_query_tokens': q_former_tokens,
             'reference_points': reference_points,
-            'prompt': prompt
+            'prompt': prompt,
+            'boundary_id': boundary_ids,
+            'boundary_type': boundary_types
+            
         }
