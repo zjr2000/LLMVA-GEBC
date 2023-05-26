@@ -61,39 +61,43 @@ class GEBCDataset(BaseDataset):
     def _load_annotations(self, annotation_path):
         with open(annotation_path, 'r') as f:
             data = json.load(f)
-        for key, video_anno in data.items():
+        for key, video_boundaries in data.items():
+            if not key in self.video_info:
+                print('missing key:', key)
+                continue
             duration = self.video_info[key]
-            boundary_duration = video_anno['next_timestamp'] - video_anno['prev_timestamp']
-            subject_data = {
-                'boundary_id': video_anno['boundary_id'],
-                'timestamp': video_anno['timestamp'],
-                'label': video_anno['label'],
-                'duration': duration,
-                'boundary_duration': boundary_duration,
-                'type': 'subject',
-                'caption': video_anno['subject']
-            }
-            status_before_data = {
-                'boundary_id': video_anno['boundary_id'],
-                'timestamp': video_anno['timestamp'],
-                'label': video_anno['label'],
-                'duration': duration,
-                'boundary_duration': boundary_duration,
-                'type': 'status_before',
-                'caption': video_anno['status_before']
-            }
-            status_after_data = {
-                'boundary_id': video_anno['boundary_id'],
-                'timestamp': video_anno['timestamp'],
-                'label': video_anno['label'],
-                'duration': duration,
-                'boundary_duration': boundary_duration,
-                'type': 'status_after',
-                'caption': video_anno['status_after']
-            }
-            self.annotation.append(subject_data)
-            self.annotation.append(status_before_data)
-            self.annotation.append(status_after_data)
+            for video_anno in video_boundaries:
+                boundary_duration = float(video_anno['next_timestamp']) - float(video_anno['prev_timestamp'])
+                subject_data = {
+                    'boundary_id': video_anno['boundary_id'],
+                    'timestamp': video_anno['timestamp'],
+                    'label': video_anno['label'],
+                    'duration': duration,
+                    'boundary_duration': boundary_duration,
+                    'type': 'subject',
+                    'caption': video_anno['subject']
+                }
+                status_before_data = {
+                    'boundary_id': video_anno['boundary_id'],
+                    'timestamp': video_anno['timestamp'],
+                    'label': video_anno['label'],
+                    'duration': duration,
+                    'boundary_duration': boundary_duration,
+                    'type': 'status_before',
+                    'caption': video_anno['status_before']
+                }
+                status_after_data = {
+                    'boundary_id': video_anno['boundary_id'],
+                    'timestamp': video_anno['timestamp'],
+                    'label': video_anno['label'],
+                    'duration': duration,
+                    'boundary_duration': boundary_duration,
+                    'type': 'status_after',
+                    'caption': video_anno['status_after']
+                }
+                self.annotation.append(subject_data)
+                self.annotation.append(status_before_data)
+                self.annotation.append(status_after_data)
     
     
     def __getitem__(self, index):
@@ -142,36 +146,40 @@ class EvalGEBCDataset(BaseDataset):
     def _load_annotations(self, annotation_path):
         with open(annotation_path, 'r') as f:
             data = json.load(f)
-        for key, video_anno in data.items():
+        for key, video_boundaries in data.items():
+            if not key in self.video_info:
+                print('missing key:', key)
+                continue
             duration = self.video_info[key]
-            boundary_duration = video_anno['next_timestamp'] - video_anno['prev_timestamp']
-            subject_data = {
-                'boundary_id': video_anno['boundary_id'],
-                'timestamp': video_anno['timestamp'],
-                'label': video_anno['label'],
-                'duration': duration,
-                'boundary_duration': boundary_duration,
-                'type': 'subject',
-            }
-            status_before_data = {
-                'boundary_id': video_anno['boundary_id'],
-                'timestamp': video_anno['timestamp'],
-                'label': video_anno['label'],
-                'duration': duration,
-                'boundary_duration': boundary_duration,
-                'type': 'status_before',
-            }
-            status_after_data = {
-                'boundary_id': video_anno['boundary_id'],
-                'timestamp': video_anno['timestamp'],
-                'label': video_anno['label'],
-                'duration': duration,
-                'boundary_duration': boundary_duration,
-                'type': 'status_after',
-            }
-            self.annotation.append(subject_data)
-            self.annotation.append(status_before_data)
-            self.annotation.append(status_after_data)
+            for video_anno in video_boundaries:
+                boundary_duration = float(video_anno['next_timestamp']) - float(video_anno['prev_timestamp'])
+                subject_data = {
+                    'boundary_id': video_anno['boundary_id'],
+                    'timestamp': video_anno['timestamp'],
+                    'label': video_anno['label'],
+                    'duration': duration,
+                    'boundary_duration': boundary_duration,
+                    'type': 'subject',
+                }
+                status_before_data = {
+                    'boundary_id': video_anno['boundary_id'],
+                    'timestamp': video_anno['timestamp'],
+                    'label': video_anno['label'],
+                    'duration': duration,
+                    'boundary_duration': boundary_duration,
+                    'type': 'status_before',
+                }
+                status_after_data = {
+                    'boundary_id': video_anno['boundary_id'],
+                    'timestamp': video_anno['timestamp'],
+                    'label': video_anno['label'],
+                    'duration': duration,
+                    'boundary_duration': boundary_duration,
+                    'type': 'status_after',
+                }
+                self.annotation.append(subject_data)
+                self.annotation.append(status_before_data)
+                self.annotation.append(status_after_data)
     
     
     def __getitem__(self, index):
