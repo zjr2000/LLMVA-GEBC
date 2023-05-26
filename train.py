@@ -8,6 +8,9 @@ Adapted from salesforce@LAVIS and Vision-CAIR@MiniGPT-4. Below is the original c
 
 import argparse
 import os
+os.environ['TORCH_HOME'] = '.cache'
+os.environ['HUGGINGFACE_HUB_CACHE'] = '.cache'
+os.environ['TRANSFORMERS_CACHE'] = '.cache'
 import random
 
 import numpy as np
