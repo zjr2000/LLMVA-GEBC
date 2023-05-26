@@ -334,7 +334,7 @@ class VideoBLIP2OPT(Blip2Base):
             print("Load BLIP2-LLM Checkpoint: {}".format(ckpt_path))
             ckpt = torch.load(ckpt_path, map_location="cpu")
             for key in list(ckpt.keys()):
-                if key.startwith('llama_proj'):
+                if key.startswith('llama_proj'):
                     logging.info('Del key {}'.format(key))
                     del ckpt[key]
             msg = model.load_state_dict(ckpt['model'], strict=False)

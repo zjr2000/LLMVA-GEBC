@@ -7,7 +7,7 @@ save/*
 *.hdf5
 *.pkl
 *.jar
-
+video_llama/output/
 *~
 __pycache__/
 *.py[cod]
