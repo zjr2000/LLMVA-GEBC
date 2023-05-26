@@ -7,17 +7,17 @@ import numpy as np
 from builtins import dict
 from functools import partial
 from scipy.ndimage import filters
-from .pycocoevalcap.tokenizer.ptbtokenizer import PTBTokenizer
-from .pycocoevalcap.rouge.rouge import Rouge
-from .pycocoevalcap.cider.cider import Cider
-from .pycocoevalcap.spice.spice import Spice
+from pycocoevalcap.tokenizer.ptbtokenizer import PTBTokenizer
+from pycocoevalcap.rouge.rouge import Rouge
+from pycocoevalcap.cider.cider import Cider
+from pycocoevalcap.spice.spice import Spice
 
 def split_pred(pred):
-    pred_dict = dict(
-        subject=dict(),
-        status_before=dict(),
-        status_after=dict()
-    )
+    pred_dict = {
+        'subject': {},
+        'status_before': {},
+        'status_after': {}
+    }
     for pred_item in pred:
         caption_type = pred_item['type']
         boundary_id = pred_item['boundary_id']
@@ -26,11 +26,11 @@ def split_pred(pred):
     return pred_dict
 
 def split_gt(gt):
-    gt_dict = dict(
-        subject=dict(),
-        status_before=dict(),
-        status_after=dict()
-    )
+    gt_dict = {
+        'subject': {},
+        'status_before': {},
+        'status_after': {}
+    }
     for _, video_anno in gt.items():
         for boundary in video_anno:
             boundary_id = boundary['boundary_id']
@@ -44,11 +44,11 @@ def split_gt(gt):
             
 
 def gebc_captioning_eval(pred_file_path, gt_file_path):
-    with open(pred_file_path, 'r') as f:
+    with open(gt_file_path, 'r') as f:
         predictions = json.load(f)
     with open(gt_file_path, 'r') as f:
         groundtruths = json.load(f)
-    pred_dict = split_pred(predictions)
+    pred_dict = split_gt(predictions)
     gt_dict = split_gt(groundtruths)
     res_pred_sub = evaluate_on_caption(pred_dict['subject'], gt_dict['subject'])
     res_pred_bef = evaluate_on_caption(pred_dict['status_before'], gt_dict['status_before'])
