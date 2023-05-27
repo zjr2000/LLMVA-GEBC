@@ -44,11 +44,11 @@ def split_gt(gt):
             
 
 def gebc_captioning_eval(pred_file_path, gt_file_path):
-    with open(gt_file_path, 'r') as f:
+    with open(pred_file_path, 'r') as f:
         predictions = json.load(f)
     with open(gt_file_path, 'r') as f:
         groundtruths = json.load(f)
-    pred_dict = split_gt(predictions)
+    pred_dict = split_pred(predictions)
     gt_dict = split_gt(groundtruths)
     res_pred_sub = evaluate_on_caption(pred_dict['subject'], gt_dict['subject'])
     res_pred_bef = evaluate_on_caption(pred_dict['status_before'], gt_dict['status_before'])
