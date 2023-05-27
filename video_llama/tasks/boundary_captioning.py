@@ -72,7 +72,7 @@ class BoundaryCaptionTask(BaseTask):
             remove_duplicate=False,
         )
 
-        if self.report_metric:
+        if self.report_metric and split_name != 'test':
             metrics = self._report_metrics(
                 eval_result_file=eval_result_file, split_name=split_name
             )
