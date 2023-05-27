@@ -105,7 +105,7 @@ class VideoBLIP2OPT(Blip2Base):
         logging.info('Loading opt_proj Done')
 
         self.max_txt_len = max_txt_len
-        self.end_sym = end_sym
+        self.end_sym = self.opt_tokenizer.eos_token
 
         self.video_frame_position_embedding = nn.Embedding(max_frame_pos, self.q_former_hidden_size)
         self.num_video_query_token = num_video_query_token
@@ -282,9 +282,17 @@ class VideoBLIP2OPT(Blip2Base):
             prompt = samples['prompt']
             video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
             
+            batch_size = video_embeds.shape[0]
+            bos = torch.ones([batch_size, 1], device=video_embeds.device).long() * self.opt_tokenizer.bos_token_id
+            bos_embeds = self.opt_model.model.decoder.embed_tokens(bos)
+            atts_bos = atts_video[:, :1]
+            
+            inputs_embeds = torch.cat([bos_embeds, video_embeds], dim=1)
+            attention_mask = torch.cat([atts_bos, atts_video], dim=1)
+            
             outputs = self.opt_model.generate(
-                inputs_embeds=video_embeds, 
-                attention_mask=atts_video,
+                inputs_embeds=inputs_embeds, 
+                attention_mask=attention_mask,
                 do_sample=use_nucleus_sampling,
                 top_p=top_p,
                 temperature=temperature,
@@ -300,7 +308,7 @@ class VideoBLIP2OPT(Blip2Base):
                 outputs, skip_special_tokens=True
             )
             
-            output_text = [text.strip() for text in output_text]
+            output_text = [text for text in output_text]
         return output_text
     
     
