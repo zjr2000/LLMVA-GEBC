@@ -2,7 +2,7 @@ model:
   arch: video_blip2_opt_gebc
   model_type: pretrain_vicuna
   # OPT
-  opt_model: facebook/opt-2.7b
+  opt_model: facebook/opt-6.7b
   # opt project 
   frozen_opt_proj: False
   num_video_query_token: 32
@@ -36,11 +36,11 @@ run:
   weight_decay: 0.001
   max_epoch: 5
   batch_size_train: 16
-  batch_size_eval: 32
+  batch_size_eval: 16
   num_workers: 4
   warmup_steps: 1000
   seed: 42
-  output_dir: "output/video_blip2_opt_highest_f1_12frame"
+  output_dir: "output/video_blip2_opt6.7b_highest_f1_12frame"
   amp: True
   resume_ckpt_path: null
   evaluate: False
