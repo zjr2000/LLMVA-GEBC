@@ -64,8 +64,8 @@ class VideoBLIP2LLAMA(Blip2Base):
         self.q_former_hidden_size = q_former_hidden_size
         logging.info('Loading LLAMA Tokenizer')
         self.llama_tokenizer = LlamaTokenizer.from_pretrained(llama_model, use_fast=False)
-        if self.llama_tokenizer.pad_token is None:
-            self.llama_tokenizer.pad_token = self.llama_tokenizer.eos_token
+        self.llama_tokenizer.pad_token = self.llama_tokenizer.eos_token
+        self.llama_tokenizer.pad_token_id = self.llama_tokenizer.eos_token_id
         
         logging.info('Loading LLAMA Model')
         if self.low_resource:
@@ -87,21 +87,22 @@ class VideoBLIP2LLAMA(Blip2Base):
 
 
         logging.info('Loading LLAMA proj')
-        self.llama_proj = nn.Linear(
+        # Rename llama_proj to llama_project to prevent corrupt due to size mismatch
+        self.llama_project = nn.Linear(
             self.q_former_hidden_size, self.llama_model.config.hidden_size
         )
         if llama_proj_model:
             print("load llama proj weight: {}".format(llama_proj_model))
             llama_proj_weight = torch.load(llama_proj_model, map_location="cpu")
-            msg = self.llama_proj.load_state_dict(llama_proj_weight['model'], strict=False)
+            msg = self.llama_project.load_state_dict(llama_proj_weight['model'], strict=False)
 
         if frozen_llama_proj:
             #  todo frozen  llama_proj
-            for name, param in self.llama_proj.named_parameters():
+            for name, param in self.llama_project.named_parameters():
                 param.requires_grad = False
             logging.info('LLAMA proj is frozen')
         else:
-            for name, param in self.llama_proj.named_parameters():
+            for name, param in self.llama_project.named_parameters():
                 param.requires_grad = True
             logging.info('LLAMA proj is not frozen')
 
@@ -126,19 +127,19 @@ class VideoBLIP2LLAMA(Blip2Base):
 
 
     def get_proposal_pos_embed(self, proposals):
-        num_pos_feats = self.q_former_hidden_size / 4
+        num_pos_feats = self.q_former_hidden_size / 2
         temperature = 10000
         scale = 2 * math.pi
 
         dim_t = torch.arange(num_pos_feats, dtype=torch.float32, device=proposals.device)
-        dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats)
+        dim_t = temperature ** (2 * (torch.div(dim_t, 2, rounding_mode='trunc')) / num_pos_feats)
         # batch size, 2
         proposals = proposals.sigmoid() * scale
         # batch size, 2, 128
         pos = proposals[:, :, None] / dim_t
         # batch size, 2, 256
-        pos = torch.stack((pos[:, :, 0::2].sin(), pos[:, :, 1::2].cos()), dim=4).flatten(2)
-        pos = pos.view(pos.shape[0], 1, -1)
+        pos = torch.stack((pos[:, :, 0::2].sin(), pos[:, :, 1::2].cos()), dim=3).flatten(2)
+        pos = pos.view(pos.shape[0], 1, -1).float()
         return pos
 
 
@@ -169,7 +170,7 @@ class VideoBLIP2LLAMA(Blip2Base):
                 )
             video_hidden = video_query_output.last_hidden_state
 
-            video_tokens = self.llama_proj(video_hidden)
+            video_tokens = self.llama_project(video_hidden)
             video_att_mask = torch.ones(video_tokens.size()[:-1], dtype=torch.long).to(video_tokens.device)
         return video_tokens, video_att_mask
             
