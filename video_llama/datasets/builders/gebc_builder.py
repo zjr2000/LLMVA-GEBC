@@ -28,7 +28,7 @@ class GEBCBuilder(BaseDatasetBuilder):
         annotations = build_info.annotations
         video_info_path = build_info.video_info_path
         q_former_feature_folder = build_info.q_former_feature_folder
-        
+        intern_video_feature_folder = build_info.intern_video_feature_folder
         for split in ['train', 'val', 'test']:
             if split not in ["train", "val", "test"]:
                 continue
@@ -38,6 +38,7 @@ class GEBCBuilder(BaseDatasetBuilder):
             datasets[split] = dataset_cls(
                 annotation_path=annotation_path,
                 video_info_path=video_info_path,
-                q_former_feature_folder=q_former_feature_folder
+                q_former_feature_folder=q_former_feature_folder,
+                intern_video_feature_folder=intern_video_feature_folder
             )
         return datasets

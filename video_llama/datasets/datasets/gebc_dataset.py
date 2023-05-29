@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pickle
 import torch
-
+from torch.nn.utils.rnn import pad_sequence
 
 def read_file(path, MEAN=0., VAR=1., data_norm=False):
     if os.path.exists(path):
@@ -30,6 +30,9 @@ def get_feats(key, vf_type, vf_folder, data_norm=False):
     if vf_type == 'q_former_tokens':
         feat_dim = 768
         path = os.path.join(vf_folder, key[0:11] + '.npy')
+    elif vf_type == 'intern_video_feature':
+        feat_dim = 768
+        path = os.path.join(vf_folder, key[0:11] + '.pkl')
     else:
         raise AssertionError('feature type error: {}'.format(vf_type))
     feats, padding = read_file(path, MEAN, VAR, data_norm)
@@ -50,8 +53,9 @@ def build_prompt(boundary_type, caption_type):
 
 
 class GEBCDataset(BaseDataset):
-    def __init__(self, annotation_path, video_info_path, q_former_feature_folder):
+    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, intern_video_feature_folder):
         self.q_former_feature_folder = q_former_feature_folder
+        self.intern_video_feature_folder = intern_video_feature_folder
         super().__init__(vis_processor=None, text_processor=None, vis_root=None, ann_paths=[])
         with open(video_info_path, 'r') as f:
             self.video_info = json.load(f)
@@ -114,8 +118,12 @@ class GEBCDataset(BaseDataset):
         # Load feature
         q_former_tokens = get_feats(item_data['boundary_id'], 'q_former_tokens', self.q_former_feature_folder)
         q_former_tokens = torch.from_numpy(q_former_tokens)
+        # load intern video feature
+        intern_video_feature = get_feats(item_data['boundary_id'], 'intern_video_feature', self.intern_video_feature_folder)
+        intern_video_feature = torch.from_numpy(intern_video_feature)
         return {
             'image_query_tokens': q_former_tokens,
+            'intern_video_feature': intern_video_feature,
             'reference_points': reference_point,
             'prompt': prompt,
             'text_input': caption,
@@ -125,12 +133,15 @@ class GEBCDataset(BaseDataset):
         
     def collater(self, samples):   
         q_former_tokens = torch.stack([sample['image_query_tokens'] for sample in samples], 0)
+        intern_video_feature = pad_sequence([sample['intern_video_feature'].unsqueeze(1) for sample in samples], 
+                                    batch_first=True, padding_value=0)
         reference_points = torch.stack([sample['reference_points'] for sample in samples], 0)
         prompt = [sample['prompt'] for sample in samples]
         text_input = [sample['text_input'] for sample in samples]
         boundary_ids = [sample['boundary_id'] for sample in samples]
         return {
             'image_query_tokens': q_former_tokens,
+            'intern_video_feature': intern_video_feature,
             'reference_points': reference_points,
             'prompt': prompt,
             'text_input': text_input,
@@ -139,8 +150,9 @@ class GEBCDataset(BaseDataset):
         
         
 class EvalGEBCDataset(BaseDataset):
-    def __init__(self, annotation_path, video_info_path, q_former_feature_folder):
+    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, intern_video_feature_folder):
         self.q_former_feature_folder = q_former_feature_folder
+        self.intern_video_feature_folder = intern_video_feature_folder
         super().__init__(vis_processor=None, text_processor=None, vis_root=None, ann_paths=[])
         with open(video_info_path, 'r') as f:
             self.video_info = json.load(f)
@@ -198,8 +210,12 @@ class EvalGEBCDataset(BaseDataset):
         # Load feature
         q_former_tokens = get_feats(item_data['boundary_id'], 'q_former_tokens', self.q_former_feature_folder)
         q_former_tokens = torch.from_numpy(q_former_tokens)
+        # load intern video feature
+        intern_video_feature = get_feats(item_data['boundary_id'], 'intern_video_feature', self.intern_video_feature_folder)
+        intern_video_feature = torch.from_numpy(intern_video_feature)
         return {
             'image_query_tokens': q_former_tokens,
+            'intern_video_feature': intern_video_feature,
             'reference_points': reference_point,
             'prompt': prompt,
             'boundary_id': item_data['boundary_id'],
@@ -209,12 +225,15 @@ class EvalGEBCDataset(BaseDataset):
         
     def collater(self, samples):   
         q_former_tokens = torch.stack([sample['image_query_tokens'] for sample in samples], 0)
+        intern_video_feature = pad_sequence([sample['intern_video_feature'].unsqueeze(1) for sample in samples], 
+                                    batch_first=True, padding_value=0)
         reference_points = torch.stack([sample['reference_points'] for sample in samples], 0)
         prompt = [sample['prompt'] for sample in samples]
         boundary_ids = [sample['boundary_id'] for sample in samples]
         caption_types = [sample['caption_type'] for sample in samples]
         return {
             'image_query_tokens': q_former_tokens,
+            'intern_video_feature': intern_video_feature,
             'reference_points': reference_points,
             'prompt': prompt,
             'boundary_id': boundary_ids,

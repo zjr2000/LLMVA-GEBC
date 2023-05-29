@@ -1,0 +1,56 @@
+model:
+  arch: video_blip2_opt_gebc
+  model_type: pretrain_vicuna
+  # OPT
+  opt_model: facebook/opt-6.7b
+  # opt project 
+  frozen_opt_proj: False
+  num_video_query_token: 32
+  max_frame_pos: 32
+  q_former_hidden_size: 768
+  max_txt_len: 30
+  end_sym: "\n"
+  ckpt: '.cache/pretrain-vicuna13b.pth'
+
+datasets:
+  gebc:
+    data_type: video
+    build_info:
+      video_info_path: data/annotations/video_info.json
+      q_former_feature_folder: data/features/eva_vit_g_q_former_tokens_12
+      annotations:
+        train:
+          annotation_path: data/annotations/train_all_annotation.json
+        val:
+          annotation_path: data/annotations/valset_highest_f1.json
+        test:
+          annotation_path: data/annotations/test_timestamp.json
+
+run:
+  task: boundary_captioning
+  # optimizer
+  lr_sched: "linear_warmup_cosine_lr"
+  init_lr: 1e-4
+  min_lr: 8e-5
+  warmup_lr: 1e-6
+  weight_decay: 0.001
+  max_epoch: 5
+  batch_size_train: 16
+  batch_size_eval: 16
+  num_workers: 4
+  warmup_steps: 1000
+  seed: 42
+  output_dir: "output/video_blip2_opt6.7b_highest_full_12frame"
+  amp: True
+  resume_ckpt_path: null
+  evaluate: False
+  train_splits: ["train"]
+  valid_splits: ["val"]
+  test_splits: ["test"]
+  device: "cuda"
+  world_size: 1
+  dist_url: "env://"
+  distributed: False
+  num_beams: 2 
+  max_len: 30
+  min_len: 1

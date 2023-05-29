@@ -40,7 +40,7 @@ run:
   num_workers: 4
   warmup_steps: 1000
   seed: 42
-  output_dir: "output/video_blip2_opt_highest_f1_12frame_eval"
+  output_dir: "output/video_blip2_otherfeat_opt_highest_f1_8frame_eval"
   amp: True
   resume_ckpt_path: null
   evaluate: True

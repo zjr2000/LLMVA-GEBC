@@ -34,7 +34,7 @@ run:
   min_lr: 8e-5
   warmup_lr: 1e-6
   weight_decay: 0.001
-  max_epoch: 10
+  max_epoch: 5
   batch_size_train: 16
   batch_size_eval: 32
   num_workers: 4
