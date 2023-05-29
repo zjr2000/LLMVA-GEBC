@@ -273,7 +273,7 @@ class VideoBLIP2LLAMA(Blip2Base):
 
             batch_size = video_embeds.shape[0]
             bos = torch.ones([batch_size, 1], device=video_embeds.device).long() * self.llama_tokenizer.bos_token_id
-            bos_embeds = self.opt_model.model.decoder.embed_tokens(bos)
+            bos_embeds = self.llama_model.get_input_embeddings()(bos)
             atts_bos = atts_video[:, :1]
             
             inputs_embeds = torch.cat([bos_embeds, video_embeds], dim=1)
