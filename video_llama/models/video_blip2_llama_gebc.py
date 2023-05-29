@@ -314,13 +314,13 @@ class VideoBLIP2LLAMA(Blip2Base):
         num_video_query_token =  cfg.get("num_video_query_token", 32)
 
         model = cls(
-            opt_model=llama_model,
+            llama_model=llama_model,
             max_txt_len=max_txt_len,
             end_sym=end_sym,
             low_resource=low_resource,  # use 8 bit and put vit in cpu
             device_8bit=device_8bit,  # the device of 8bit model should be set when loading and cannot be changed anymore.
-            frozen_opt_proj=frozen_llama_proj,
-            opt_proj_model=llama_proj_model,
+            frozen_llama_proj=frozen_llama_proj,
+            llama_proj_model=llama_proj_model,
             max_frame_pos= max_frame_pos,
             num_video_query_token = num_video_query_token,
             q_former_hidden_size=q_former_hidden_size
