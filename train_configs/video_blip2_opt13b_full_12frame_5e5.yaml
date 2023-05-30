@@ -1,10 +1,10 @@
 model:
-  arch: video_blip2_llama_gebc
+  arch: video_blip2_opt_gebc
   model_type: pretrain_vicuna
   # OPT
-  llama_model: huggyllama/llama-7b
+  opt_model: facebook/opt-13b
   # opt project 
-  frozen_llama_proj: False
+  frozen_opt_proj: False
   num_video_query_token: 32
   max_frame_pos: 32
   q_former_hidden_size: 768
@@ -30,17 +30,17 @@ run:
   task: boundary_captioning
   # optimizer
   lr_sched: "linear_warmup_cosine_lr"
-  init_lr: 1e-4
-  min_lr: 8e-5
+  init_lr: 5e-5
+  min_lr: 1e-5
   warmup_lr: 1e-6
   weight_decay: 0.001
   max_epoch: 5
   batch_size_train: 16
-  batch_size_eval: 16
+  batch_size_eval: 8
   num_workers: 4
   warmup_steps: 5000
   seed: 42
-  output_dir: "output/video_blip2_llama7b_full_12frame"
+  output_dir: "output/video_blip2_opt13b_full_12frame_5e5"
   amp: True
   resume_ckpt_path: null
   evaluate: False
