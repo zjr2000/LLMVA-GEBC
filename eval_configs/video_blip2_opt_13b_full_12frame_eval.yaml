@@ -10,7 +10,7 @@ model:
   q_former_hidden_size: 768
   max_txt_len: 30
   end_sym: "\n"
-  ckpt: 'video_llama/output/video_blip2_opt13b_full_12frame/20230529144/checkpoint_best.pth'
+  ckpt: 'video_llama/output/video_blip2_opt13b_full_12frame_8e5/20230530095/checkpoint_best.pth'
 
 datasets:
   gebc:
