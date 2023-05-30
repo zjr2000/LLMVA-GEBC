@@ -4,7 +4,7 @@ import json
 import numpy as np
 import pickle
 import torch
-from torch.nn.utils.rnn import pad_sequence
+from scipy.interpolate import interp1d
 
 def read_file(path, MEAN=0., VAR=1., data_norm=False):
     if os.path.exists(path):
@@ -30,7 +30,13 @@ def get_feats(key, vf_type, vf_folder, data_norm=False):
     if vf_type == 'q_former_tokens':
         feat_dim = 768
         path = os.path.join(vf_folder, key[0:11] + '.npy')
-    elif vf_type == 'intern_video_feature':
+    elif vf_type == 'intern_video':
+        feat_dim = 768
+        path = os.path.join(vf_folder, key[0:11] + '.pkl')
+    elif vf_type == 'omni':
+        feat_dim = 1536
+        path = os.path.join(vf_folder, key[0:11] + '.pkl')
+    elif vf_type == 'clip':
         feat_dim = 768
         path = os.path.join(vf_folder, key[0:11] + '.pkl')
     else:
@@ -40,6 +46,18 @@ def get_feats(key, vf_type, vf_folder, data_norm=False):
     assert feats.shape[-1] == feat_dim, 'load {} error, got shape {}'.format(path, feats.shape)
     return feats
 
+def resizeFeature(inputData, newSize, sample_method):
+    # inputX: (temporal_length,feature_dimension) #
+    originalSize = len(inputData)
+    # print originalSize
+    if originalSize == 1:
+        inputData = np.reshape(inputData, [-1])
+        return np.stack([inputData] * newSize)
+    x = np.array(range(originalSize))
+    f = interp1d(x, inputData, axis=0, kind=sample_method)
+    x_new = [i * float(originalSize - 1) / (newSize - 1) for i in range(newSize)]
+    y_new = f(x_new)
+    return y_new
 
 def build_prompt(boundary_type, caption_type):
     prompt = 'This video describes the {}.'.format(boundary_type.lower())
@@ -53,9 +71,11 @@ def build_prompt(boundary_type, caption_type):
 
 
 class GEBCDataset(BaseDataset):
-    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, intern_video_feature_folder):
+    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, other_feature_names, other_feature_folders, max_seq_len):
         self.q_former_feature_folder = q_former_feature_folder
-        self.intern_video_feature_folder = intern_video_feature_folder
+        self.other_feature_names = other_feature_names
+        self.other_feature_folders = other_feature_folders
+        self.max_seq_len = max_seq_len
         super().__init__(vis_processor=None, text_processor=None, vis_root=None, ann_paths=[])
         with open(video_info_path, 'r') as f:
             self.video_info = json.load(f)
@@ -117,13 +137,16 @@ class GEBCDataset(BaseDataset):
         caption = item_data['caption']
         # Load feature
         q_former_tokens = get_feats(item_data['boundary_id'], 'q_former_tokens', self.q_former_feature_folder)
-        q_former_tokens = torch.from_numpy(q_former_tokens)
-        # load intern video feature
-        intern_video_feature = get_feats(item_data['boundary_id'], 'intern_video_feature', self.intern_video_feature_folder)
-        intern_video_feature = torch.from_numpy(intern_video_feature)
+        q_former_tokens = torch.from_numpy(q_former_tokens) # (t,q,h)
+        # load  other feature
+        other_features_list = [] # (a,t,h), a is the number of other features
+        for i, folder in enumerate(self.other_feature_folders):
+            other_feature = get_feats(item_data['boundary_id'], self.other_feature_names[i], folder) # (t,h)
+            other_features_list.append(other_feature)
+        
         return {
             'image_query_tokens': q_former_tokens,
-            'intern_video_feature': intern_video_feature,
+            'other_features_list': other_features_list,
             'reference_points': reference_point,
             'prompt': prompt,
             'text_input': caption,
@@ -132,16 +155,27 @@ class GEBCDataset(BaseDataset):
     
         
     def collater(self, samples):   
-        q_former_tokens = torch.stack([sample['image_query_tokens'] for sample in samples], 0)
-        intern_video_feature = pad_sequence([sample['intern_video_feature'].unsqueeze(1) for sample in samples], 
-                                    batch_first=True, padding_value=0)
+        q_former_tokens = torch.stack([sample['image_query_tokens'] for sample in samples], 0) # (b,t,q,h)
+        
+        other_features_list = [sample['other_features_list'] for sample in samples] # (b,a,t,h)
+        batch_size = len(other_features_list)
+        n_feature= len(other_features_list[0])
+        for i in range(batch_size):
+            for j in range(n_feature):
+                other_features_list[i][j] = resizeFeature(other_features_list[i][j], self.max_seq_len, 'nearest') #(t,h)
+                other_features_list[i][j] = torch.from_numpy(other_features_list[i][j]).unsqueeze(1) # (t,q,h)
+            
+            other_features_list[i] = torch.cat(other_features_list[i], dim=-1) # (t,q,h1)
+
+        other_features_list = torch.stack(other_features_list, dim=0) # (b,t,q,h1)
+
         reference_points = torch.stack([sample['reference_points'] for sample in samples], 0)
         prompt = [sample['prompt'] for sample in samples]
         text_input = [sample['text_input'] for sample in samples]
         boundary_ids = [sample['boundary_id'] for sample in samples]
         return {
             'image_query_tokens': q_former_tokens,
-            'intern_video_feature': intern_video_feature,
+            'other_features_list': other_features_list,
             'reference_points': reference_points,
             'prompt': prompt,
             'text_input': text_input,
@@ -150,9 +184,11 @@ class GEBCDataset(BaseDataset):
         
         
 class EvalGEBCDataset(BaseDataset):
-    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, intern_video_feature_folder):
+    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, other_feature_names, other_feature_folders, max_seq_len):
         self.q_former_feature_folder = q_former_feature_folder
-        self.intern_video_feature_folder = intern_video_feature_folder
+        self.other_feature_names = other_feature_names
+        self.other_feature_folders = other_feature_folders
+        self.max_seq_len = max_seq_len
         super().__init__(vis_processor=None, text_processor=None, vis_root=None, ann_paths=[])
         with open(video_info_path, 'r') as f:
             self.video_info = json.load(f)
@@ -210,12 +246,14 @@ class EvalGEBCDataset(BaseDataset):
         # Load feature
         q_former_tokens = get_feats(item_data['boundary_id'], 'q_former_tokens', self.q_former_feature_folder)
         q_former_tokens = torch.from_numpy(q_former_tokens)
-        # load intern video feature
-        intern_video_feature = get_feats(item_data['boundary_id'], 'intern_video_feature', self.intern_video_feature_folder)
-        intern_video_feature = torch.from_numpy(intern_video_feature)
+        # load  other feature
+        other_features_list = [] # (a,t,h), a is the number of other features
+        for i, folder in enumerate(self.other_feature_folders):
+            other_feature = get_feats(item_data['boundary_id'], self.other_feature_names[i], folder) # (t,h)
+            other_features_list.append(other_feature)
         return {
             'image_query_tokens': q_former_tokens,
-            'intern_video_feature': intern_video_feature,
+            'other_features_list': other_features_list,
             'reference_points': reference_point,
             'prompt': prompt,
             'boundary_id': item_data['boundary_id'],
@@ -225,15 +263,26 @@ class EvalGEBCDataset(BaseDataset):
         
     def collater(self, samples):   
         q_former_tokens = torch.stack([sample['image_query_tokens'] for sample in samples], 0)
-        intern_video_feature = pad_sequence([sample['intern_video_feature'].unsqueeze(1) for sample in samples], 
-                                    batch_first=True, padding_value=0)
+        
+        other_features_list = [sample['other_features_list'] for sample in samples] # (b,a,t,h)
+        batch_size = len(other_features_list)
+        n_feature= len(other_features_list[0])
+        for i in range(batch_size):
+            for j in range(n_feature):
+                other_features_list[i][j] = resizeFeature(other_features_list[i][j], self.max_seq_len, 'nearest') #(t,h)
+                other_features_list[i][j] = torch.from_numpy(other_features_list[i][j]).unsqueeze(1) # (t,q,h)
+            
+            other_features_list[i] = torch.cat(other_features_list[i], dim=-1) # (t,q,h1)
+
+        other_features_list = torch.stack(other_features_list, dim=0) # (b,t,q,h1)
+
         reference_points = torch.stack([sample['reference_points'] for sample in samples], 0)
         prompt = [sample['prompt'] for sample in samples]
         boundary_ids = [sample['boundary_id'] for sample in samples]
         caption_types = [sample['caption_type'] for sample in samples]
         return {
             'image_query_tokens': q_former_tokens,
-            'intern_video_feature': intern_video_feature,
+            'other_features_list': other_features_list,
             'reference_points': reference_points,
             'prompt': prompt,
             'boundary_id': boundary_ids,

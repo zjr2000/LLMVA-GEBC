@@ -57,7 +57,8 @@ class VideoBLIP2OPT(Blip2Base):
         max_frame_pos= 32,
         num_video_query_token = 32,
         q_former_hidden_size=768,
-        num_backbone=2 
+        other_feat_total_size=768,
+        num_q_former=2,
     ):
         super().__init__()
 
@@ -109,7 +110,10 @@ class VideoBLIP2OPT(Blip2Base):
         self.end_sym = self.opt_tokenizer.eos_token
 
         self.num_video_query_token = num_video_query_token
-        for i in range(num_backbone):
+        self.other_feat_total_size = other_feat_total_size
+        self.other_feat_linear = nn.Linear(self.other_feat_total_size, self.q_former_hidden_size)
+
+        for i in range(num_q_former):
             video_frame_position_embedding = nn.Embedding(max_frame_pos, self.q_former_hidden_size)
             video_Qformer,video_query_tokens = self.init_video_Qformer(num_query_token = num_video_query_token,\
                 vision_width=self.q_former_hidden_size, num_hidden_layers =2)
@@ -199,11 +203,11 @@ class VideoBLIP2OPT(Blip2Base):
     
     def forward(self, samples):
         image_query_tokens = samples['image_query_tokens']
-        intern_video_feature = samples['intern_video_feature']
-
+        other_features = samples['other_features_list']
         reference_points = samples['reference_points']
         video_embeds_0, atts_video_0 = self.encode_video(image_query_tokens, reference_points, idx=0)
-        video_embeds_1, atts_video_1 = self.encode_video(intern_video_feature, reference_points, idx=1)
+        other_features = self.other_feat_linear(other_features)
+        video_embeds_1, atts_video_1 = self.encode_video(other_features, reference_points, idx=1)
         video_embeds = video_embeds_0 + video_embeds_1
         atts_video = atts_video_0
 
@@ -339,6 +343,7 @@ class VideoBLIP2OPT(Blip2Base):
         opt_proj_model = cfg.get("opt_proj_model", '')
         max_frame_pos = cfg.get("max_frame_pos", 32)
         num_video_query_token =  cfg.get("num_video_query_token", 32)
+        other_feat_total_size = cfg.get("other_feat_total_size")
 
         model = cls(
             opt_model=opt_model,
@@ -350,7 +355,8 @@ class VideoBLIP2OPT(Blip2Base):
             opt_proj_model=opt_proj_model,
             max_frame_pos= max_frame_pos,
             num_video_query_token = num_video_query_token,
-            q_former_hidden_size=q_former_hidden_size
+            q_former_hidden_size=q_former_hidden_size,
+            other_feat_total_size=other_feat_total_size,
         )
 
         ckpt_path = cfg.get("ckpt", "")  # load weights of MiniGPT-4
