@@ -64,8 +64,8 @@ class VideoBLIP2LLAMA(Blip2Base):
         self.q_former_hidden_size = q_former_hidden_size
         logging.info('Loading LLAMA Tokenizer')
         self.llama_tokenizer = LlamaTokenizer.from_pretrained(llama_model, use_fast=False)
-        self.llama_tokenizer.pad_token = self.llama_tokenizer.eos_token
-        self.llama_tokenizer.pad_token_id = self.llama_tokenizer.eos_token_id
+        self.llama_tokenizer.pad_token = self.llama_tokenizer.unk_token
+        self.llama_tokenizer.pad_token_id = self.llama_tokenizer.unk_token_id
         
         logging.info('Loading LLAMA Model')
         if self.low_resource:
@@ -273,7 +273,7 @@ class VideoBLIP2LLAMA(Blip2Base):
 
             batch_size = video_embeds.shape[0]
             bos = torch.ones([batch_size, 1], device=video_embeds.device).long() * self.llama_tokenizer.bos_token_id
-            bos_embeds = self.llama_model.get_input_embeddings()(bos)
+            bos_embeds = self.llama_model.model.embed_tokens(bos)
             atts_bos = atts_video[:, :1]
             
             inputs_embeds = torch.cat([bos_embeds, video_embeds], dim=1)
