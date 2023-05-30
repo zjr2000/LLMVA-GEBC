@@ -2,7 +2,7 @@ model:
   arch: video_blip2_opt_gebc
   model_type: pretrain_vicuna
   # OPT
-  opt_model: facebook/opt-2.7b
+  opt_model: facebook/opt-13b
   # opt project 
   frozen_opt_proj: False
   num_video_query_token: 32
@@ -10,7 +10,7 @@ model:
   q_former_hidden_size: 768
   max_txt_len: 30
   end_sym: "\n"
-  ckpt: 'video_llama/output/video_blip2_opt_highest_f1_12frame/20230527121/checkpoint_best.pth'
+  ckpt: '.cache/pretrain-vicuna13b.pth'
 
 datasets:
   gebc:
@@ -34,18 +34,18 @@ run:
   min_lr: 8e-5
   warmup_lr: 1e-6
   weight_decay: 0.001
-  max_epoch: 0
-  batch_size_train: 16
-  batch_size_eval: 32
+  max_epoch: 5
+  batch_size_train: 8
+  batch_size_eval: 8
   num_workers: 4
   warmup_steps: 1000
   seed: 42
-  output_dir: "output/video_blip2_otherfeat_opt_highest_f1_8frame_eval"
+  output_dir: "output/video_blip2_opt13b_highest_f1_12frame"
   amp: True
   resume_ckpt_path: null
-  evaluate: True
+  evaluate: False
   train_splits: ["train"]
-  valid_splits: ['val']
+  valid_splits: ["val"]
   test_splits: ["test"]
   device: "cuda"
   world_size: 1

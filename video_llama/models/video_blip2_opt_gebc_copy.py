@@ -56,9 +56,7 @@ class VideoBLIP2OPT(Blip2Base):
         opt_proj_model='',
         max_frame_pos= 32,
         num_video_query_token = 32,
-        q_former_hidden_size=768,
-        other_feat_total_size=768,
-        num_q_former=2,
+        q_former_hidden_size=768
     ):
         super().__init__()
 
@@ -109,28 +107,20 @@ class VideoBLIP2OPT(Blip2Base):
         self.max_txt_len = max_txt_len
         self.end_sym = self.opt_tokenizer.eos_token
 
+        self.video_frame_position_embedding = nn.Embedding(max_frame_pos, self.q_former_hidden_size)
         self.num_video_query_token = num_video_query_token
-        self.other_feat_total_size = other_feat_total_size
-        self.other_feat_linear = nn.Linear(self.other_feat_total_size, self.q_former_hidden_size)
+        self.video_Qformer,self.video_query_tokens = self.init_video_Qformer(num_query_token = num_video_query_token,\
+            vision_width=self.q_former_hidden_size, num_hidden_layers =2)
 
-        for i in range(num_q_former):
-            video_frame_position_embedding = nn.Embedding(max_frame_pos, self.q_former_hidden_size)
-            video_Qformer,video_query_tokens = self.init_video_Qformer(num_query_token = num_video_query_token,\
-                vision_width=self.q_former_hidden_size, num_hidden_layers =2)
+        self.video_Qformer.cls = None
+        self.video_Qformer.bert.embeddings.word_embeddings = None
+        self.video_Qformer.bert.embeddings.position_embeddings = None
+        for layer in self.video_Qformer.bert.encoder.layer:
+            layer.output = None
+            layer.intermediate = None
+        self.temporal_pos_trans = nn.Linear(self.q_former_hidden_size, self.q_former_hidden_size)
+        self.temporal_pos_trans_norm = nn.LayerNorm(self.q_former_hidden_size)
 
-            video_Qformer.cls = None
-            video_Qformer.bert.embeddings.word_embeddings = None
-            video_Qformer.bert.embeddings.position_embeddings = None
-            for layer in video_Qformer.bert.encoder.layer:
-                layer.output = None
-                layer.intermediate = None
-            temporal_pos_trans = nn.Linear(self.q_former_hidden_size, self.q_former_hidden_size)
-            temporal_pos_trans_norm = nn.LayerNorm(self.q_former_hidden_size)
-            setattr(self, f'video_frame_position_embedding_{i}', video_frame_position_embedding)
-            setattr(self, f'video_Qformer_{i}', video_Qformer)
-            setattr(self, f'video_query_tokens_{i}', video_query_tokens)
-            setattr(self, f'temporal_pos_trans_{i}', temporal_pos_trans)
-            setattr(self, f'temporal_pos_trans_norm_{i}', temporal_pos_trans_norm) # use getattr(self, f'linear{i}')
 
     def get_proposal_pos_embed(self, proposals):
         num_pos_feats = self.q_former_hidden_size / 2
@@ -149,26 +139,26 @@ class VideoBLIP2OPT(Blip2Base):
         return pos
 
 
-    def encode_video(self, q_hidden_state, reference_points, idx):
+    def encode_video(self, q_hidden_state, reference_points):
         with self.maybe_autocast():
             # add frame_pos embedding
             batch_size, time_length, _, _ = q_hidden_state.size()
             position_ids = torch.arange(time_length, dtype=torch.long, device=q_hidden_state.device)
             position_ids = position_ids.unsqueeze(0).expand(batch_size, -1)
-            frame_position_embeddings = getattr(self, f'video_frame_position_embedding_{idx}')(position_ids)
+            frame_position_embeddings = self.video_frame_position_embedding(position_ids)
             
             frame_position_embeddings = frame_position_embeddings.unsqueeze(-2)
             frame_hidden_state = frame_position_embeddings + q_hidden_state
             # frame attention
             frame_hidden_state =  einops.rearrange(frame_hidden_state, 'b t q h -> b (t q) h',b=batch_size,t=time_length)
             frame_atts = torch.ones(frame_hidden_state.size()[:-1], dtype=torch.long).to(q_hidden_state.device)
-            video_query_tokens = getattr(self, f'video_query_tokens_{idx}').expand(frame_hidden_state.shape[0], -1, -1)
+            video_query_tokens = self.video_query_tokens.expand(frame_hidden_state.shape[0], -1, -1)
             
             # Embed boundary information,  batch size, 1, hidden_size
-            reference_point_embed = getattr(self, f'temporal_pos_trans_norm_{idx}')(getattr(self, f'temporal_pos_trans_{idx}')(self.get_proposal_pos_embed(reference_points)))
+            reference_point_embed = self.temporal_pos_trans_norm(self.temporal_pos_trans(self.get_proposal_pos_embed(reference_points)))
             video_query_tokens = video_query_tokens + reference_point_embed
             
-            video_query_output = getattr(self, f'video_Qformer_{idx}').bert(
+            video_query_output = self.video_Qformer.bert(
                 query_embeds=video_query_tokens,
                 encoder_hidden_states=frame_hidden_state,
                 encoder_attention_mask=frame_atts,
@@ -203,13 +193,9 @@ class VideoBLIP2OPT(Blip2Base):
     
     def forward(self, samples):
         image_query_tokens = samples['image_query_tokens']
-        other_features = samples['other_features_list']
+
         reference_points = samples['reference_points']
-        video_embeds_0, atts_video_0 = self.encode_video(image_query_tokens, reference_points, idx=0)
-        other_features = self.other_feat_linear(other_features)
-        video_embeds_1, atts_video_1 = self.encode_video(other_features, reference_points, idx=1)
-        video_embeds = video_embeds_0 + video_embeds_1
-        atts_video = atts_video_0
+        video_embeds, atts_video = self.encode_video(image_query_tokens, reference_points)
 
         prompt = samples['prompt']
         video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
@@ -289,14 +275,9 @@ class VideoBLIP2OPT(Blip2Base):
         """
         with self.maybe_autocast():
             image_query_tokens = samples['image_query_tokens']
-            intern_video_feature = samples['intern_video_feature']
 
             reference_points = samples['reference_points']
-            video_embeds_0, atts_video_0 = self.encode_video(image_query_tokens, reference_points, idx=0)
-            video_embeds_1, atts_video_1 = self.encode_video(intern_video_feature, reference_points, idx=1)
-            video_embeds = video_embeds_0 + video_embeds_1
-            atts_video = atts_video_0
-            reference_points = samples['reference_points']
+            video_embeds, atts_video = self.encode_video(image_query_tokens, reference_points)
 
             prompt = samples['prompt']
             video_embeds, atts_video = self.prompt_wrap(video_embeds, atts_video, prompt)
@@ -343,7 +324,6 @@ class VideoBLIP2OPT(Blip2Base):
         opt_proj_model = cfg.get("opt_proj_model", '')
         max_frame_pos = cfg.get("max_frame_pos", 32)
         num_video_query_token =  cfg.get("num_video_query_token", 32)
-        other_feat_total_size = cfg.get("other_feat_total_size")
 
         model = cls(
             opt_model=opt_model,
@@ -355,8 +335,7 @@ class VideoBLIP2OPT(Blip2Base):
             opt_proj_model=opt_proj_model,
             max_frame_pos= max_frame_pos,
             num_video_query_token = num_video_query_token,
-            q_former_hidden_size=q_former_hidden_size,
-            other_feat_total_size=other_feat_total_size,
+            q_former_hidden_size=q_former_hidden_size
         )
 
         ckpt_path = cfg.get("ckpt", "")  # load weights of MiniGPT-4
