@@ -128,6 +128,22 @@ class VideoBLIP2OPT(Blip2Base):
         self.other_feat_temporal_pos_trans = nn.Linear(self.q_former_hidden_size, self.q_former_hidden_size)
         self.other_feat_temporal_pos_trans_norm = nn.LayerNorm(self.q_former_hidden_size)
 
+        # Object_feature
+        self.objct_feat_total_size = 2054
+        self.objct_feat_linear = nn.Linear(self.objct_feat_total_size, self.q_former_hidden_size)
+        self.objct_feat_position_embedding = nn.Embedding(max_other_features_pos, self.q_former_hidden_size)
+        self.objct_feat_Qformer,self.objct_feat_query_tokens = self.init_video_Qformer(num_query_token = num_other_feat_query_token,\
+            vision_width=self.q_former_hidden_size, num_hidden_layers =1)
+
+        self.objct_feat_Qformer.cls = None
+        self.objct_feat_Qformer.bert.embeddings.word_embeddings = None
+        self.objct_feat_Qformer.bert.embeddings.position_embeddings = None
+        for layer in self.objct_feat_Qformer.bert.encoder.layer:
+            layer.output = None
+            layer.intermediate = None
+        self.objct_feat_temporal_pos_trans = nn.Linear(self.q_former_hidden_size, self.q_former_hidden_size)
+        self.objct_feat_temporal_pos_trans_norm = nn.LayerNorm(self.q_former_hidden_size)
+
         # Init video Qformer
         self.video_frame_position_embedding = nn.Embedding(max_frame_pos, self.q_former_hidden_size)
         self.video_Qformer,self.video_query_tokens = self.init_video_Qformer(num_query_token = num_video_query_token,\
@@ -179,6 +195,39 @@ class VideoBLIP2OPT(Blip2Base):
             video_query_tokens = video_query_tokens + reference_point_embed
             
             video_query_output = self.video_Qformer.bert(
+                query_embeds=video_query_tokens,
+                encoder_hidden_states=frame_hidden_state,
+                encoder_attention_mask=frame_atts,
+                return_dict=True,
+                )
+            video_hidden = video_query_output.last_hidden_state
+
+            video_tokens = self.opt_proj(video_hidden)
+            video_att_mask = torch.ones(video_tokens.size()[:-1], dtype=torch.long).to(video_tokens.device)
+        return video_tokens, video_att_mask
+    
+
+    def encode_object_feature(self, q_hidden_state, reference_points):
+        with self.maybe_autocast():
+            # add frame_pos embedding
+            q_hidden_state = self.objct_feat_linear(q_hidden_state)
+            batch_size, time_length, _, _ = q_hidden_state.size()
+            position_ids = torch.arange(time_length, dtype=torch.long, device=q_hidden_state.device)
+            position_ids = position_ids.unsqueeze(0).expand(batch_size, -1)
+            frame_position_embeddings = self.objct_feat_position_embedding(position_ids)
+            
+            frame_position_embeddings = frame_position_embeddings.unsqueeze(-2)
+            frame_hidden_state = frame_position_embeddings + q_hidden_state
+            # frame attention
+            frame_hidden_state =  einops.rearrange(frame_hidden_state, 'b t q h -> b (t q) h',b=batch_size,t=time_length)
+            frame_atts = torch.ones(frame_hidden_state.size()[:-1], dtype=torch.long).to(q_hidden_state.device)
+            video_query_tokens = self.objct_feat_query_tokens.expand(frame_hidden_state.shape[0], -1, -1)
+            
+            # Embed boundary information,  batch size, 1, hidden_size
+            reference_point_embed = self.objct_feat_temporal_pos_trans_norm(self.objct_feat_temporal_pos_trans(self.get_proposal_pos_embed(reference_points)))
+            video_query_tokens = video_query_tokens + reference_point_embed
+            
+            video_query_output = self.objct_feat_Qformer.bert(
                 query_embeds=video_query_tokens,
                 encoder_hidden_states=frame_hidden_state,
                 encoder_attention_mask=frame_atts,
@@ -250,6 +299,8 @@ class VideoBLIP2OPT(Blip2Base):
         reference_points = samples['reference_points']
         video_embeds_0, atts_video_0 = self.encode_video(image_query_tokens, reference_points)
         video_embeds_1, atts_video_1 = self.encode_other_feat(other_features, reference_points)
+        video_embeds_2, _ = self.encode_object_feature(samples['object_features'], reference_points)
+        video_embeds_1 = video_embeds_1 + video_embeds_2
         video_embeds = torch.cat([video_embeds_0, video_embeds_1], dim=-2)
         atts_video = torch.cat([atts_video_0, atts_video_1], dim=-1)
 
@@ -335,6 +386,8 @@ class VideoBLIP2OPT(Blip2Base):
             reference_points = samples['reference_points']
             video_embeds_0, atts_video_0 = self.encode_video(image_query_tokens, reference_points)
             video_embeds_1, atts_video_1 = self.encode_other_feat(other_features, reference_points)
+            video_embeds_2, _ = self.encode_object_feature(samples['object_features'], reference_points)
+            video_embeds_1 = video_embeds_1 + video_embeds_2
             video_embeds = torch.cat([video_embeds_0, video_embeds_1], dim=-2)
             atts_video = torch.cat([atts_video_0, atts_video_1], dim=-1)
 

@@ -70,12 +70,36 @@ def build_prompt(boundary_type, caption_type):
     return prompt
 
 
+def load_object_feats(key, object_feature_path_map, num_frame=12, max_obj_num=10, feat_dim=2054):
+    frame_num = len(object_feature_path_map[key])
+    frame_indicies = list(range(frame_num))
+    if len(frame_indicies) < num_frame:
+        last_idx = frame_indicies[-1]
+        while len(frame_indicies) < num_frame:
+            frame_indicies.append(last_idx)
+    step = len(frame_indicies) // num_frame
+    frame_indicies = [frame_indicies[i * step] for i in range(num_frame)]
+    object_features = []
+    for frame_idx in frame_indicies:
+        frame_obj_feature_path = object_feature_path_map[key][frame_idx]
+        feature, _  = read_file(frame_obj_feature_path)
+        if feature.shape[0] < max_obj_num:
+            feature = np.concatenate([feature, np.zeros((max_obj_num, feat_dim))])
+        feature = feature[0:max_obj_num,:]
+        object_features.append(feature)
+    object_features = np.stack(object_features, axis=0)
+    object_features = torch.from_numpy(object_features)
+    return object_features
+
+
 class GEBCDataset(BaseDataset):
-    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, other_feature_names, other_feature_folders, max_seq_len):
+    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, other_feature_names, other_feature_folders, max_seq_len, object_feature_path_map):
         self.q_former_feature_folder = q_former_feature_folder
         self.other_feature_names = other_feature_names
         self.other_feature_folders = other_feature_folders
         self.max_seq_len = max_seq_len
+        with open(object_feature_path_map, 'r') as f:
+            self.object_feature_path_map = json.load(f)
         super().__init__(vis_processor=None, text_processor=None, vis_root=None, ann_paths=[])
         with open(video_info_path, 'r') as f:
             self.video_info = json.load(f)
@@ -143,6 +167,7 @@ class GEBCDataset(BaseDataset):
         for i, folder in enumerate(self.other_feature_folders):
             other_feature = get_feats(item_data['boundary_id'], self.other_feature_names[i], folder) # (t,h)
             other_features_list.append(other_feature)
+        object_features = load_object_feats(item_data['boundary_id'][0:11], self.object_feature_path_map, num_frame=12, max_obj_num=10, feat_dim=2054)
         
         return {
             'image_query_tokens': q_former_tokens,
@@ -150,7 +175,8 @@ class GEBCDataset(BaseDataset):
             'reference_points': reference_point,
             'prompt': prompt,
             'text_input': caption,
-            'boundary_id': item_data['boundary_id']
+            'boundary_id': item_data['boundary_id'],
+            'object_features': object_features
         }
     
         
@@ -170,6 +196,7 @@ class GEBCDataset(BaseDataset):
         other_features_list = torch.stack(other_features_list, dim=0) # (b,t,q,h1)
 
         reference_points = torch.stack([sample['reference_points'] for sample in samples], 0)
+        object_features = torch.stack([sample['object_features'] for sample in samples], 0)
         prompt = [sample['prompt'] for sample in samples]
         text_input = [sample['text_input'] for sample in samples]
         boundary_ids = [sample['boundary_id'] for sample in samples]
@@ -179,12 +206,13 @@ class GEBCDataset(BaseDataset):
             'reference_points': reference_points,
             'prompt': prompt,
             'text_input': text_input,
+            'object_features': object_features,
             'boundary_id': boundary_ids
         }
         
         
 class EvalGEBCDataset(BaseDataset):
-    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, other_feature_names, other_feature_folders, max_seq_len):
+    def __init__(self, annotation_path, video_info_path, q_former_feature_folder, other_feature_names, other_feature_folders, max_seq_len, object_feature_path_map):
         self.q_former_feature_folder = q_former_feature_folder
         self.other_feature_names = other_feature_names
         self.other_feature_folders = other_feature_folders
@@ -193,6 +221,8 @@ class EvalGEBCDataset(BaseDataset):
         with open(video_info_path, 'r') as f:
             self.video_info = json.load(f)
         self._load_annotations(annotation_path)
+        with open(object_feature_path_map, 'r') as f:
+            self.object_feature_path_map = json.load(f)
             
 
     def _load_annotations(self, annotation_path):
@@ -251,12 +281,14 @@ class EvalGEBCDataset(BaseDataset):
         for i, folder in enumerate(self.other_feature_folders):
             other_feature = get_feats(item_data['boundary_id'], self.other_feature_names[i], folder) # (t,h)
             other_features_list.append(other_feature)
+        object_features = load_object_feats(item_data['boundary_id'][0:11], self.object_feature_path_map, num_frame=12, max_obj_num=6, feat_dim=2054)
         return {
             'image_query_tokens': q_former_tokens,
             'other_features_list': other_features_list,
             'reference_points': reference_point,
             'prompt': prompt,
             'boundary_id': item_data['boundary_id'],
+            'object_features': object_features,
             'caption_type': caption_type
         }
     
@@ -280,11 +312,13 @@ class EvalGEBCDataset(BaseDataset):
         prompt = [sample['prompt'] for sample in samples]
         boundary_ids = [sample['boundary_id'] for sample in samples]
         caption_types = [sample['caption_type'] for sample in samples]
+        object_features = torch.stack([sample['object_features'] for sample in samples], 0)
         return {
             'image_query_tokens': q_former_tokens,
             'other_features_list': other_features_list,
             'reference_points': reference_points,
             'prompt': prompt,
             'boundary_id': boundary_ids,
+            'object_features': object_features,
             'caption_type': caption_types
         }

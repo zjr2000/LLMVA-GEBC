@@ -30,6 +30,7 @@ class GEBCBuilder(BaseDatasetBuilder):
         q_former_feature_folder = build_info.q_former_feature_folder
         other_feature_names = build_info.other_feature_names
         other_feature_folders = build_info.other_feature_folders
+        object_feature_path_map = build_info.object_feature_path_map
         max_seq_len = build_info.max_seq_len
         for split in ['train', 'val', 'test']:
             if split not in ["train", "val", "test"]:
@@ -44,5 +45,6 @@ class GEBCBuilder(BaseDatasetBuilder):
                 other_feature_names=other_feature_names,
                 other_feature_folders=other_feature_folders,
                 max_seq_len=max_seq_len,
+                object_feature_path_map=object_feature_path_map
             )
         return datasets
