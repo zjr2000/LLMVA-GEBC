@@ -24,17 +24,7 @@ conda activate llmvagebc
 ## Prerequisite Checkpoints
 
 Before using the repository, make sure you have obtained the following checkpoints:
-- Get the original LLaMA weights in the huggingface format by following the instructions [here](https://huggingface.co/docs/transformers/main/model_doc/llama).
-- Download [Vicuna delta weights](https://huggingface.co/lmsys/vicuna-13b-delta-v0). 
-- Use the following command to add delta weights to the original LLaMA weights to obtain the Vicuna weights.
 
-```
-python apply_delta.py \
-    --base /path/to/llama-13b \
-    --target /output/path/to/vicuna-13b --delta /path/to/vicuna-13b-delta
-```
-
-- Download the MiniGPT-4 model (trained linear layer) from this [link](https://drive.google.com/file/d/1a4zLvaiDBr-36pasffmgpvH5P7CKmpze/view).
 
 ## Data
 Using [CLIP](https://github.com/openai/CLIP) to extract frame-level features and [Omnivore](https://github.com/facebookresearch/omnivore) to extract clip-level features. We use [this](https://github.com/zjr2000/Untrimmed-Video-Feature-Extractor) pipeline to extract features. 
