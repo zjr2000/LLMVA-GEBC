@@ -53,11 +53,11 @@ Then put this file under ```data/gebc/```.
 
 
 ## Training
-Firstly, set the configs in `train_configs/{NAME_OF_YOUR_CONFIG_FILE}.yaml`.
+Firstly, set the configs in `train_configs/${NAME_OF_YOUR_CONFIG_FILE}.yaml`.
 Then run the script
 ```
-CUDA_VISIBLE_DEVICES={YOUR_GPU_ID} python train.py \
-    --cfg-path train_configs/{NAME_OF_YOUR_CONFIG_FILE}.yaml
+CUDA_VISIBLE_DEVICES=${YOUR_GPU_ID} python train.py \
+    --cfg-path train_configs/${NAME_OF_YOUR_CONFIG_FILE}.yaml
 ```
 
 ## Acknowledgement
