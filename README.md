@@ -31,11 +31,11 @@ Using [CLIP](https://github.com/openai/CLIP) to extract frame-level features and
 
 Then, put the extracted features under these two folders:
 ```
-data/gebc/features/clip_gebc,
-data/gebc/omni_gebc
+data/gebc/features/clip_fps_15_stride_1_rename,
+data/gebc/omnivore_fps_15_len_16_stride_1_rename
 ``` 
 
-You can also directly download the official provided features [here](https://sites.google.com/view/loveucvpr22/home). But, remember to change the ```visual_feature_folder``` and ```feature_dim``` in the config file.
+You can also directly download the official provided features [here](https://sites.google.com/view/loveucvpr22/home). But, remember to change the ```q_former_feature_folder```, ```other_feat_total_size```, ```other_feature_names``` and ```other_feature_folders``` in the config file.
 
 
 Using [VinVL](https://github.com/microsoft/scene_graph_benchmark) to extract region-level features. The region feature of a video is saved to multiple ```.npy``` files, where each single file contains the region feature of a sampled frame. Merge the feature file paths into  ```video_to_frame_index.json``` in the following format:
