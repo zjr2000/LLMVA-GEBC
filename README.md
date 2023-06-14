@@ -37,9 +37,6 @@ python apply_delta.py \
 
 - Download the MiniGPT-4 model (trained linear layer) from this [link](https://drive.google.com/file/d/1a4zLvaiDBr-36pasffmgpvH5P7CKmpze/view).
 
-## How to Run Demo Locally
-
-
 
 ## Training
 Firstly, set the `llama_model` and `ckpt` in [eval_configs/video_llama_eval.yaml](./eval_configs/video_llama_eval.yaml).
@@ -49,50 +46,10 @@ CUDA_VISIBLE_DEVICES=8 python train.py \
     --cfg-path train_configs/video_blip2_opt13b_full_12frame_intern_omni_clip_8tokens.yaml
 ```
 
-
-### 1. Pre-training
-#### Data Preparation
-Download the metadata and video following the instruction from the official Github repo of [Webvid](https://github.com/m-bain/webvid).
-The folder structure of the dataset is shown below:
-```
-|webvid_train_data
-|──filter_annotation
-|────0.tsv
-|──videos
-|────000001_000050
-|──────1066674784.mp4
-```
-```
-|cc3m
-|──filter_cap.json
-|──image
-|────GCC_train_000000000.jpg
-|────...
-```
-#### Script
-Config the the checkpoint and dataset paths in [video_llama_stage1_pretrain.yaml](./train_configs/video_llama_stage1_pretrain.yaml)
-Run the script:
-```
-conda activate videollama
-torchrun --nproc_per_node=8 train.py --cfg-path  ./train_configs/video_llama_stage1_pretrain.yaml
-```
-
-### 2. Fine-tuning
-#### Data Download 
-Refer to the instuction in MiniGPT4 repo: [link](https://github.com/Vision-CAIR/MiniGPT-4/blob/main/dataset/README_2_STAGE.md)
-
-#### Script
-Config the the checkpoint and dataset paths in [video_llama_stage2_finetune.yaml](./train_configs/video_llama_stage2_finetune.yaml)
-```
-conda activate videollama
-torchrun --nproc_per_node=8 train.py --cfg-path  ./train_configs/video_llama_stage1_pretrain.yaml
-```
-
 ## Acknowledgement
 We are grateful for the following awesome projects our Video-LLaMA arising from:
 * [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2): Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models 
 * [EVA-CLIP](https://github.com/baaivision/EVA/tree/master/EVA-CLIP): Improved Training Techniques for CLIP at Scale
-* [LLaMA](https://github.com/facebookresearch/llama): Open and Efficient Foundation Language Models
 * [Video-LLaMA](https://github.com/DAMO-NLP-SG/Video-LLaMA)
 * [OPT](https://github.com/facebookresearch/metaseq):Open and Efficient Foundation Language Models
 * [Kinetic-GEBC](https://github.com/showlab/geb-plus): The dataset consists of over 170k boundaries associated with captions describing status changes in the generic events in 12K videos.
@@ -101,11 +58,11 @@ We are grateful for the following awesome projects our Video-LLaMA arising from:
 ## Citation
 If you find our project useful, please cite the repo as follows:
 ```
-@software{damonlpsg2023videollama,
-  author = {Zhang, Hang and Li, Xin and Bing, Lidong},
-  title = {Video-LLaMA: An Instruction-Finetuned Visual Language Model for Video Understanding},
+@software{cvprw2023llmvagebc,
+  author = {Tang, Yunlong and Zhang, Jinrui and Wang, Xiangchen and Wang, Teng and Zheng, Feng},
+  title = {LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning},
   year = 2023,
-  url = {https://github.com/DAMO-NLP-SG/Video-LLaMA}
+  url = {https://github.com/zjr2000/LLMVA-GEBC}
 }
 ```
 
