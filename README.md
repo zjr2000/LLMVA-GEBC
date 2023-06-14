@@ -38,11 +38,11 @@ python apply_delta.py \
 
 
 ## Training
-Firstly, set the `llama_model` and `ckpt` in [eval_configs/video_llama_eval.yaml](./eval_configs/video_llama_eval.yaml).
+Firstly, set the configs in `train_configs/{NAME_OF_YOUR_CONFIG_FILE}.yaml`.
 Then run the script
 ```
 CUDA_VISIBLE_DEVICES=8 python train.py \
-    --cfg-path train_configs/video_blip2_opt13b_full_12frame_intern_omni_clip_8tokens.yaml
+    --cfg-path train_configs/{NAME_OF_YOUR_CONFIG_FILE}.yaml
 ```
 
 ## Acknowledgement
@@ -50,7 +50,7 @@ We are grateful for the following awesome projects our LLMVA-GEBC arising from:
 * [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2): Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models 
 * [EVA-CLIP](https://github.com/baaivision/EVA/tree/master/EVA-CLIP): Improved Training Techniques for CLIP at Scale
 * [Video-LLaMA](https://github.com/DAMO-NLP-SG/Video-LLaMA)
-* [OPT](https://github.com/facebookresearch/metaseq):Open and Efficient Foundation Language Models
+* [OPT](https://github.com/facebookresearch/metaseq): Open and Efficient Foundation Language Models
 * [Kinetic-GEBC](https://github.com/showlab/geb-plus): The dataset consists of over 170k boundaries associated with captions describing status changes in the generic events in 12K videos.
 
 
