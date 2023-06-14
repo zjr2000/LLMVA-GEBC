@@ -1,17 +1,16 @@
 # LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning
 
-Code for the LOVEU@CVPR2023 Workshop Generic Event Boundary Captioning Chanllenge.
-
-Our proposed method achieved a 76.14 score on the test set and won the 1^{st} place in the challenge.
+Code for the LOVEU@CVPR2023 Workshop Generic Event Boundary Captioning Chanllenge. Our proposed method achieved a 76.14 score on the test set and won the 1^{st} place in the challenge.
 
 ## Introduction
+
+We proposes an effective model LLMVA-GEBC (Large Language Model with Video Adapter for Generic Event Boundary Captioning): 
+(1) We utilize a pretrained LLM for generating human-like captions with high quality. 
+(2) To adapt the model to the GEBC task, we take the video Q-former as an adapter and train it with the frozen visual feature extractors and LLM.
+
 <p align="center" width="100%">
 <a target="_blank"><img src="figs/model.png" alt="LLMVA-GEBC" style="width: 80%; min-width: 200px; display: block; margin: auto;"></a>
 </p>
-
-<!-- <p align="center" width="100%">
-<a target="_blank"><img src="figs/results.png" alt="results" style="width: 80%; min-width: 200px; display: block; margin: auto;"></a>
-</p> -->
 
 ### Enviroment Preparation 
 
