@@ -1,6 +1,8 @@
 # LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning
 
-This is the repo for the LOVEU@CVPR2023 Workshop Generic Event Boundary Captioning Chanllenge.
+Code for the LOVEU@CVPR2023 Workshop Generic Event Boundary Captioning Chanllenge.
+
+Our proposed method achieved a 76.14 score on the test set and won the 1^{st} place in the challenge.
 
 ## Introduction
 <p align="center" width="100%">
