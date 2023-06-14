@@ -33,7 +33,10 @@ Remember to change the path of checkpoints `ckpt` in the config file.
 Download the Kinetic-GEBC dataset from https://sites.google.com/view/loveucvpr23/track2.
 
 **For primary visual feature:**
-Using [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2) to extract primary visual features. We use `feature_extraction.py` to do so. Remember to change the `video_dir` and `save_dir` in `train_configs/blip2_feature_extract.yaml`.
+Using [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2) to extract primary visual features. We use `feature_extraction.py` to do so. Remember to change the `video_dir` and `save_dir` in `train_configs/blip2_feature_extract.yaml` before you run:
+```
+python feature_extraction.py
+```
 
 **For other visual features:**
 [CLIP](https://github.com/openai/CLIP) to extract frame-level features and [Omnivore](https://github.com/facebookresearch/omnivore) to extract clip-level features. We use [this](https://github.com/zjr2000/Untrimmed-Video-Feature-Extractor) pipeline to extract features.
@@ -73,6 +76,7 @@ The results can be found in `video_llama/output/`.
 
 ## Acknowledgement
 We are grateful for the following awesome projects our LLMVA-GEBC arising from:
+* [Context-GEBC](https://github.com/zjr2000/Context-GEBC)
 * [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2)
 * [Video-LLaMA](https://github.com/DAMO-NLP-SG/Video-LLaMA)
 * [OPT](https://github.com/facebookresearch/metaseq)
