@@ -48,7 +48,6 @@ CUDA_VISIBLE_DEVICES={YOUR_GPU_ID} python train.py \
 ## Acknowledgement
 We are grateful for the following awesome projects our LLMVA-GEBC arising from:
 * [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2): Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models 
-* [EVA-CLIP](https://github.com/baaivision/EVA/tree/master/EVA-CLIP): Improved Training Techniques for CLIP at Scale
 * [Video-LLaMA](https://github.com/DAMO-NLP-SG/Video-LLaMA)
 * [OPT](https://github.com/facebookresearch/metaseq): Open and Efficient Foundation Language Models
 * [Kinetic-GEBC](https://github.com/showlab/geb-plus): The dataset consists of over 170k boundaries associated with captions describing status changes in the generic events in 12K videos.
