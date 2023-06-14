@@ -9,16 +9,16 @@ Our proposed method achieved a 76.14 score on the test set and won the 1^{st} pl
 <a target="_blank"><img src="figs/model.png" alt="LLMVA-GEBC" style="width: 80%; min-width: 200px; display: block; margin: auto;"></a>
 </p>
 
-<p align="center" width="100%">
+<!-- <p align="center" width="100%">
 <a target="_blank"><img src="figs/results.png" alt="results" style="width: 80%; min-width: 200px; display: block; margin: auto;"></a>
-</p>
+</p> -->
 
 ### Enviroment Preparation 
 
 First, you should create a conda environment:
 ```
 conda env create -f environment.yml
-conda activate videollama
+conda activate llmvagebc
 ```
 
 
@@ -47,7 +47,7 @@ CUDA_VISIBLE_DEVICES=8 python train.py \
 ```
 
 ## Acknowledgement
-We are grateful for the following awesome projects our Video-LLaMA arising from:
+We are grateful for the following awesome projects our LLMVA-GEBC arising from:
 * [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2): Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models 
 * [EVA-CLIP](https://github.com/baaivision/EVA/tree/master/EVA-CLIP): Improved Training Techniques for CLIP at Scale
 * [Video-LLaMA](https://github.com/DAMO-NLP-SG/Video-LLaMA)
