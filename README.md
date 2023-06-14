@@ -41,7 +41,7 @@ python apply_delta.py \
 Firstly, set the configs in `train_configs/{NAME_OF_YOUR_CONFIG_FILE}.yaml`.
 Then run the script
 ```
-CUDA_VISIBLE_DEVICES=8 python train.py \
+CUDA_VISIBLE_DEVICES={YOUR_GPU_ID} python train.py \
     --cfg-path train_configs/{NAME_OF_YOUR_CONFIG_FILE}.yaml
 ```
 
@@ -55,7 +55,7 @@ We are grateful for the following awesome projects our LLMVA-GEBC arising from:
 
 
 ## Citation
-If you find our project useful, please cite the repo as follows:
+If you find our code useful, please cite the repo as follows:
 ```
 @software{cvprw2023llmvagebc,
   author = {Tang, Yunlong and Zhang, Jinrui and Wang, Xiangchen and Wang, Teng and Zheng, Feng},
