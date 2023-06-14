@@ -24,7 +24,7 @@ conda activate llmvagebc
 ## Prerequisite Checkpoints
 
 Before using the repository, make sure you have obtained the following checkpoints:
-
+- [pretrain-vicuna13b](https://huggingface.co/DAMO-NLP-SG/Video-LLaMA-Series/resolve/main/pretrain-vicuna13b.pth)
 
 ## Data
 Using [CLIP](https://github.com/openai/CLIP) to extract frame-level features and [Omnivore](https://github.com/facebookresearch/omnivore) to extract clip-level features. We use [this](https://github.com/zjr2000/Untrimmed-Video-Feature-Extractor) pipeline to extract features. 
