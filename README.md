@@ -30,10 +30,11 @@ Before using the repository, make sure you have obtained the following checkpoin
 ## Data
 Using [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2) to extract primary visual features, [CLIP](https://github.com/openai/CLIP) to extract frame-level features and [Omnivore](https://github.com/facebookresearch/omnivore) to extract clip-level features. We use [this](https://github.com/zjr2000/Untrimmed-Video-Feature-Extractor) pipeline to extract features. 
 
-Then, put the extracted features under these two folders:
+Then, put the extracted features under these three folders:
 ```
-data/gebc/features/clip_fps_15_stride_1_rename,
-data/gebc/omnivore_fps_15_len_16_stride_1_rename
+data/features/eva_vit_g_q_former_tokens_12
+data/features/clip_fps_15_stride_1_rename,
+data/features/omnivore_fps_15_len_16_stride_1_rename
 ``` 
 
 You can also directly download the official provided features [here](https://sites.google.com/view/loveucvpr22/home). But, remember to change the ```q_former_feature_folder```, ```other_feat_total_size```, ```other_feature_names``` and ```other_feature_folders``` in the config file.
@@ -50,7 +51,7 @@ Using [VinVL](https://github.com/microsoft/scene_graph_benchmark) to extract reg
     ...
 }
 ``` 
-Then put this file under ```data/gebc/```.
+Then put this file under ```data/features/```.
 
 
 ## Training
