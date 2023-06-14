@@ -62,7 +62,7 @@ Using [VinVL](https://github.com/microsoft/scene_graph_benchmark) to extract reg
 Then put this file under ```data/features/```.
 
 
-## Training
+## Training and Validation
 Firstly, set the configs in `train_configs/${NAME_OF_YOUR_CONFIG_FILE}.yaml`.
 Then run the script
 ```
