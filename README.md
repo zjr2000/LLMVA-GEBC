@@ -69,6 +69,7 @@ Then run the script
 CUDA_VISIBLE_DEVICES=${YOUR_GPU_ID} python train.py \
     --cfg-path train_configs/${NAME_OF_YOUR_CONFIG_FILE}.yaml
 ```
+The results can be found in `video_llama/output/`.
 
 ## Acknowledgement
 We are grateful for the following awesome projects our LLMVA-GEBC arising from:
