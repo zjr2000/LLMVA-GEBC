@@ -1,28 +1,10 @@
-<p align="center" width="100%">
-<a target="_blank"><img src="figs/video_llama_logo.jpg" alt="Video-LLaMA" style="width: 50%; min-width: 200px; display: block; margin: auto;"></a>
-</p>
+# LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning
 
-
-
-# Video-LLaMA: An Instruction-Finetuned Visual Language Model for Video Understanding
-<!-- **Video-LLaMA: An Instruction-Finetuned Visual Language Model for Video Understanding** -->
-
-This is the repo for the Video-LLaMA project, which is working on empowering large language models with video understanding capability. 
-
-Continuously upgrading, stay tuned for more updates!
-
-## News
-- [05.18] 🚀 Support video-grounded chat in Chinese 🚀
-    - [**Video-LLaMA-BiLLA**](https://huggingface.co/DAMO-NLP-SG/Video-LLaMA-Series/resolve/main/finetune-billa7b-zh.pth): we introduce [BiLLa-7B](https://huggingface.co/Neutralzz/BiLLa-7B-SFT) as language decoder and fine-tune the video-language aligned model (i.e., stage 1 model) with machine-translated [VideoChat](https://github.com/OpenGVLab/InternVideo/tree/main/Data/instruction_data) instructions.   
-    - [**Video-LLaMA-Ziya**](https://huggingface.co/DAMO-NLP-SG/Video-LLaMA-Series/resolve/main/finetune-ziya13b-zh.pth): same with Video-LLaMA-BiLLA but the language decoder is changed to [Ziya-13B](https://huggingface.co/IDEA-CCNL/Ziya-LLaMA-13B-v1).    
-- [05.18] ⭐️ Create a Huggingface [repo](https://huggingface.co/DAMO-NLP-SG/Video-LLaMA-Series) to store the model weights of all the variants of our Video-LLaMA.
-- [05.15] ⭐️ Release [**Video-LLaMA v2**](https://huggingface.co/DAMO-NLP-SG/Video-LLaMA-Series/resolve/main/finetune-vicuna13b-v2.pth): we use the training data provided by [VideoChat](https://github.com/OpenGVLab/InternVideo/tree/main/Data/instruction_data) to further enhance the instruction-following capability of Video-LLaMA.
-- [05.07] Release the initial version of **Video-LLaMA**, including its pre-trained and instruction-tuned checkpoints.
+This is the repo for the LOVEU@CVPR2023 Workshop Generic Event Boundary Captioning Chanllenge.
 
 ## Introduction
 
-
-- Video-LLaMA is built on top of awesome [MiniGPT-4](https://github.com/Vision-CAIR/MiniGPT-4) (image encoder: ViT-G/14+Q-Former, language decoder: Vicuna-13B). 
+- Video-LLaMA is built on top of awesome [MiniGPT-4](https://github.com/Vision-CAIR/MiniGPT-4) (image encoder: ViT-G/14+Q-Former, language decoder: OPT-13B). 
 - We introduce a two-layer video Q-Former and a frame embedding layer (applied to the query tokens of each frame) to make the image encoder of MiniGPT-4 capable to process video input. 
 - To enable Vicuna-13B to understand video representations, we pre-train the Video-LLaMA on the Webvid-2M video caption dataset with a video-to-text generation task. We also add image-text pairs (~595K image captions from [LLaVA](https://github.com/haotian-liu/LLaVA)) into the pre-training dataset to enhance the understanding of static visual concepts.
 - After pre-training, we further fine-tune our Video-LLaMA using the ~~image-based instruction-tuning data from [MiniGPT-4](https://github.com/Vision-CAIR/MiniGPT-4)~~ video-based training data from [VideoChat](https://github.com/OpenGVLab/Ask-Anything) (7K video detailed descriptions + 4K video-based conversations).  
@@ -77,20 +59,16 @@ python apply_delta.py \
 
 ## How to Run Demo Locally
 
+
+
+## Training
 Firstly, set the `llama_model` and `ckpt` in [eval_configs/video_llama_eval.yaml](./eval_configs/video_llama_eval.yaml).
 Then run the script
 ```
-python demo_video.py \
-    --cfg-path eval_configs/video_llama_eval.yaml  --gpu-id 0
+CUDA_VISIBLE_DEVICES=8 python train.py \
+    --cfg-path train_configs/video_blip2_opt13b_full_12frame_intern_omni_clip_8tokens.yaml
 ```
 
-## Training
-
-The training of Video-LLaMA consists of two stages,
-
-1. Pre-training on the Webvid-2.5M video caption dataset and LLaVA-CC3M image caption dataset.
-
-2. Fine-tuning using the image-based instruction-tuning data from MiniGPT-4.
 
 ### 1. Pre-training
 #### Data Preparation
@@ -132,15 +110,13 @@ torchrun --nproc_per_node=8 train.py --cfg-path  ./train_configs/video_llama_sta
 
 ## Acknowledgement
 We are grateful for the following awesome projects our Video-LLaMA arising from:
-* [MiniGPT-4](https://github.com/Vision-CAIR/MiniGPT-4): Enhancing Vision-language Understanding with Advanced Large Language Models
-* [FastChat](https://github.com/lm-sys/FastChat): An Open Platform for Training, Serving, and Evaluating Large Language Model based Chatbots
 * [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2): Bootstrapping Language-Image Pre-training with Frozen Image Encoders and Large Language Models 
 * [EVA-CLIP](https://github.com/baaivision/EVA/tree/master/EVA-CLIP): Improved Training Techniques for CLIP at Scale
 * [LLaMA](https://github.com/facebookresearch/llama): Open and Efficient Foundation Language Models
-* [LLaVA](https://github.com/haotian-liu/LLaVA): Large Language and Vision Assistant
-* [WebVid](https://github.com/m-bain/webvid): A Large-scale Video-Text dataset
-* [mPLUG-Owl](https://github.com/X-PLUG/mPLUG-Owl/tree/main): Modularization Empowers Large Language Models with Multimodality
-* [VideoChat](https://github.com/OpenGVLab/Ask-Anything): Chat-Centric Video Understanding 
+* [Video-LLaMA](https://github.com/DAMO-NLP-SG/Video-LLaMA)
+* [OPT](https://github.com/facebookresearch/metaseq):Open and Efficient Foundation Language Models
+* [Kinetic-GEBC](https://github.com/showlab/geb-plus): The dataset consists of over 170k boundaries associated with captions describing status changes in the generic events in 12K videos.
+
 
 ## Citation
 If you find our project useful, please cite the repo as follows:
