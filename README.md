@@ -1,6 +1,6 @@
 # LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning
 
-Code for the [LOVEU@CVPR2023 Workshop Generic Event Boundary Captioning (GEBC) Chanllenge](https://sites.google.com/view/loveucvpr23/track2). Our proposed method achieved a **76.14** score on the test set and won the $1^{st}$ place in the challenge.
+Code for the [LOVEU@CVPR2023 Workshop Generic Event Boundary Captioning (GEBC) Chanllenge](https://sites.google.com/view/loveucvpr23/track2). Our proposed method achieved a **76.14** score on the test set and won the $1^{st}$ place in the challenge. The technical report can be found [here](https://arxiv.org/abs/2306.10354).
 
 ## Introduction
 
@@ -91,6 +91,15 @@ If you find our code useful, please cite the repo as follows:
   title = {LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning},
   year = 2023,
   url = {https://github.com/zjr2000/LLMVA-GEBC}
+}
+
+@misc{tang2023llmvagebc,
+      title={LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning}, 
+      author={Yunlong Tang and Jinrui Zhang and Xiangchen Wang and Teng Wang and Feng Zheng},
+      year={2023},
+      eprint={2306.10354},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
 }
 ```
 
