@@ -35,7 +35,7 @@ Download the Kinetic-GEBC dataset from https://sites.google.com/view/loveucvpr23
 **For primary visual feature:**
 Using [BLIP-2](https://github.com/salesforce/LAVIS/tree/main/projects/blip2) to extract primary visual features. We use `feature_extraction.py` to do so. Remember to change the `video_dir` and `save_dir` in `train_configs/blip2_feature_extract.yaml` before you run:
 ```
-python feature_extraction.py
+python feature_extraction.py --cfg-path train_configs/blip2_feature_extract.yaml
 ```
 
 **For other visual features:**
