@@ -86,13 +86,11 @@ We are grateful for the following awesome projects our LLMVA-GEBC arising from:
 ## Citation
 If you find our code useful, please cite the repo as follows:
 ```
-@misc{tang2023llmvagebc,
-      title={LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning}, 
-      author={Yunlong Tang and Jinrui Zhang and Xiangchen Wang and Teng Wang and Feng Zheng},
-      year={2023},
-      eprint={2306.10354},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@article{tang2023llmva,
+  title={LLMVA-GEBC: Large Language Model with Video Adapter for Generic Event Boundary Captioning},
+  author={Tang, Yunlong and Zhang, Jinrui and Wang, Xiangchen and Wang, Teng and Zheng, Feng},
+  journal={arXiv preprint arXiv:2306.10354},
+  year={2023}
 }
 ```
 
